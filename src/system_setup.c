@@ -1,6 +1,10 @@
-#include "stm32f4xx.h"
+#include <stm32f4xx.h>
 
 #define VECT_TAB_OFFSET  0x00
+#define PLLP 4
+#define PLLN 320
+#define PLLM 8
+#define PLLQ 7
 
 void SystemInit(void)
 {
@@ -10,18 +14,8 @@ void SystemInit(void)
   /* Wait for PLL to end */
   while ((RCC->CR & RCC_CR_PLLRDY) != 0);
 
-  /*
-    HSE = 8000000
-    PLLP = 4
-    PLLN = 336
-    PLLM = 8
-    PLLQ = 7
-  */
   /* HSE as PLL input */
-  //PLLout = 84Mhz                            PLLP = 4     PLLN = 336   PLLM = 8
-  //RCC->PLLCFGR |= (RCC_PLLCFGR_PLLSRC_HSE | (1 << 16) | (336 << 6) | (8 << 0));
-  /* Configure the main PLL */
-  RCC->PLLCFGR = 8 | (336 << 6) | (((4 >> 1) -1) << 16) | (RCC_PLLCFGR_PLLSRC_HSE) | (7 << 24);  
+  RCC->PLLCFGR = PLLM | (PLLN << 6) | (((PLLP >> 1) -1) << 16) | (RCC_PLLCFGR_PLLSRC_HSE) | (PLLQ << 24);  
 
   RCC->APB1ENR |= RCC_APB1ENR_PWREN;
   PWR->CR &= (uint32_t)~(PWR_CR_VOS);
@@ -30,7 +24,7 @@ void SystemInit(void)
   RCC->CFGR = 0x00000000;
 
   /* PLL used as system clock and periferal stuff DIV2*/
-  RCC->CFGR |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV2 | RCC_CFGR_PPRE1_DIV4);
+  RCC->CFGR |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV2);
 
   /* enable external oscillator*/
   RCC->CR |= RCC_CR_HSEON;

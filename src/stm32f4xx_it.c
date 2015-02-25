@@ -41,6 +41,7 @@
 //#include "main.h"
 #include <stm32f401xc.h>
 #include "stm32f4xx_it.h"
+#include "systick.h"
 #include "gpio.h"
 #include "utils.h"
 
@@ -160,7 +161,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-  //HAL_IncTick();
+  SysTickIncrement();
 }
 
 /**

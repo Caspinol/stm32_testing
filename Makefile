@@ -37,35 +37,34 @@ O = $(patsubst $(SRC)/%.c, $(BUILD)/%.o, $(patsubst $(STARTUP)/%.s, $(BUILD)/%.o
 all: $(BIN)
 
 $(BIN): $(ELF)
-	$(OBJCOPY) -Oihex $(ELF) $(BIN)
-	@echo "elf is ready"
+	@$(OBJCOPY) -Oihex $(ELF) $(BIN)
+	@echo "Elf is ready to load!!!"
 
 $(BUILD)/%.o: $(SRC)/%.s
-#	@echo "Assembling $<..."
-	$(AS) -o $@ $<
+	@$(AS) -o $@ $<
 	@echo "Assembly of $< finished"
 
 $(BUILD)/%.o: $(SRC)/%.c
 #compile all files first
-#	@echo "Compiling $<..."
-	$(CC) $(CFLAGS) -c -o $@ $<
+	@mkdir -p $(BUILD)
+	@$(CC) $(CFLAGS) -c -o $@ $<
 	@echo "Compilation of $< finished"
 
 $(BUILD)/%.o: $(STARTUP)/%.s
 #compile all files first
-#	@echo "Compiling $<..."
-	$(CC) $(CFLAGS) -c -o $@ $<
+	@$(CC) $(CFLAGS) -c -o $@ $<
 	@echo "Compilation of $< finished"
 
 $(ELF): $(O)
 	@echo "Linking..."
-	$(CC) $(LFLAGS) $(O) -o $(ELF)
+	@$(CC) $(LFLAGS) $(O) -o $(ELF)
 	@echo "Linking done"
 
 .PHONY: clean
 clean:
 	@echo "Deleting *.o files"
 	@$(RM) $(BUILD)/*.o
+	@echo "Deleting elf and hex files"
 	@$(RM) $(BIN) $(ELF)
 
 #just for Makefile debugging

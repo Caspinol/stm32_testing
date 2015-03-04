@@ -1,4 +1,5 @@
 #include <stm32f401xc.h>
+#include "systick.h"
 #include "utils.h"
 #include "i2c.h"
 
@@ -12,11 +13,21 @@
         INT2 - PE4
 */
 
-#define I2C_START(I2CX)   (I2CX->CR1 |= I2C_CR1_START)
-#define I2C_STOP(I2CX)   (I2CX->CR1 |= I2C_CR1_STOP)
-#define I2C_CHECK_FLAG() ()
+#define MAX_FLAG_WAIT 500000 /*eee 500ms wait ? */
 
-void qc_i2c_init(){
+#define I2C_START(I2CX) (I2CX->CR1 |= I2C_CR1_START)
+#define I2C_STOP(I2CX) (I2CX->CR1 |= I2C_CR1_STOP)
+#define I2C_CHECK_SB(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_SB) == STATE)
+#define I2C_CHECK_ADDR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_ADDR) == STATE)
+#define I2C_CHECK_OVR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_OVR) == STATE)
+#define I2C_CHECK_AF(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_AF) == STATE)
+#define I2C_CHECK_BERR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_BERR) == STATE)
+#define I2C_CHECK_arlo(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_ARLO) == STATE)
+#define I2C_CHECK_TxE(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_TXE) == STATE)
+#define I2C_CHECK_RxNE(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_RXNE) == STATE)
+#define I2C_CHECK_BTF(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_BTF) == STATE)
+
+void kg_i2c_init(){
   /* Init GPIOB and GPIOE clock */
   RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOEEN);
   /* enable clock for i2c1 peripheral */
@@ -35,11 +46,15 @@ void qc_i2c_init(){
   /*
     TODO: set the interrupt config - maybe
    */
+
+  /* clock strrech enabled */
+  I2C1->CR1 &= ~I2C_CR1_NOSTRETCH;
   
   /* clock is 40MHz */
   I2C1->CR2 |= (40 << 0);
 
-  /* 7bit addressing */
+  /* 7bit addressing no need to set own
+     address cause will be master */
   I2C1->OAR1 |= ~(I2C_OAR1_ADDMODE);
   /* use only OAR1 */
   I2C1->OAR2 &= 0x00000000;
@@ -71,9 +86,41 @@ void qc_i2c_init(){
   I2C1->CR1 |= I2C_CR1_PE;
 }
 
-static RetStatus qc_flag_wait(I2C_TypeDef *I2Cx, int32 flag, BitStatus status, int32 time){
-
+ret_status kg_i2c_master_send(I2C_TypeDef *I2Cx, int8 address, int8 data, int size){
+  
   
 
+  return EXIT_OK;
+}
+
+static ret_status i2c_master_write(I2C_TypeDef *I2Cx, int8 address){
+
+  int32 tick = kg_systick_get_tick();
+
+  I2C_START(I2Cx);
+
+  /* wait for START to send */
+  while(I2C_CHECK_SB(I2Cx, UNSET)){
+    if((kg_systick_get_tick() - tick) > MAX_FLAG_WAIT){
+      /* looks like it's not happening so give up*/
+      return EXIT_TIMEOUT;
+    }
+  }
+  
+  /* write the address with LSB 0 to indicate write*/
+  I2Cx->DR = address;
+
+  /*reset the tick */
+  tick = kg_systick_get_tick();
+  /* and wait for address flag to set */
+  while(I2C_CHECK_ADDR(I2Cx, UNSET)){
+    if((kg_systick_get_tick() - tick) > MAX_FLAG_WAIT){
+      return EXIT_TIMEOUT;
+    }
+    /* also check for Acknowledge failure */
+    if(I2C_CHECK_AF(I2Cx, SET)){
+      return EXIT_FAIL;
+    }
+  }
   return EXIT_OK;
 }

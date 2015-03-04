@@ -9,18 +9,19 @@
 
 typedef uint32_t int32;
 typedef uint16_t int16;
-typedef uint8_t ubyte;
+typedef uint8_t int8;
 
-enum{
+typedef enum BitStatus {
   UNSET = 0,
   SET
-}BitStatus;
+}bit_status;
 
-enum{
+typedef enum RetStatus{
   EXIT_OK = 0,
-  EXIT_FAIL
-}RetStatus;
+  EXIT_FAIL,
+  EXIT_TIMEOUT
+}ret_status;
 
-void qc_delay(int32);
+void kg_delay(int32);
 
 #endif

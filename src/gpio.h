@@ -22,12 +22,13 @@
 #define GPIO_PIN_ALL               ((uint16_t)0xFFFF)
 
 
-void qc_gpio_init();
-void qc_gpio_pin_set(GPIO_TypeDef *, uint16_t);
-void qc_gpio_pin_clear(GPIO_TypeDef *, uint16_t);
-int qc_gpio_pin_get(GPIO_TypeDef *, uint16_t);
-void qc_gpio_port_set(GPIO_TypeDef *);
-void qc_gpio_port_read(GPIO_TypeDef *);
-void qc_gpio_basic_flash(uint32_t);
-void qc_delay(uint32_t);
+void kg_gpio_init();
+void kg_gpio_pin_set(GPIO_TypeDef *, uint16_t);
+void kg_gpio_pin_clear(GPIO_TypeDef *, uint16_t);
+int kg_gpio_pin_get(GPIO_TypeDef *, uint16_t);
+void kg_gpio_port_set(GPIO_TypeDef *);
+void kg_gpio_port_read(GPIO_TypeDef *);
+void kg_gpio_basic_flash(uint32_t);
+
+
 #endif

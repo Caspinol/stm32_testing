@@ -161,7 +161,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-  SysTickIncrement();
+  kg_systick_increment();
 }
 
 /**
@@ -171,8 +171,8 @@ void SysTick_Handler(void)
   */ 
 void EXTI0_IRQHandler(void){
   if(EXTI->PR & EXTI_PR_PR0){
-    qc_delay(5000);
-    while(qc_gpio_pin_get(GPIOA, GPIO_PIN_0));
+    kg_delay(5000);
+    while(kg_gpio_pin_get(GPIOA, GPIO_PIN_0));
       modeFlag ^= 1;
     /* clear it by setting it to 1 */
     EXTI->PR |= EXTI_PR_PR0;

@@ -7,15 +7,14 @@ int modeFlag = 0;
 
 int main(){
     
-  SysTickInit();
-  qc_gpio_init();
-  //qc_i2c_init();
-  
+  kg_systick_init();
+  kg_gpio_init();
+
   while(1){
     
-    qc_gpio_basic_flash(SET_ms(250));
+    kg_gpio_basic_flash(SET_ms(250));
     while(modeFlag){
-      qc_gpio_basic_flash(SET_ms(50));
+      kg_gpio_basic_flash(SET_ms(50));
     }
   }
 

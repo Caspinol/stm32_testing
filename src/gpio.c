@@ -7,7 +7,7 @@
 #define LED_RED GPIO_PIN_14
 #define LED_BLUE GPIO_PIN_15
 
-void qc_gpio_init(){
+void kg_gpio_init(){
 
   /* GPIO D and A Periph clock enable */
   RCC->AHB1ENR |= (RCC_AHB1ENR_GPIODEN | RCC_AHB1ENR_GPIOAEN);
@@ -39,21 +39,21 @@ void qc_gpio_init(){
   NVIC_EnableIRQ(EXTI0_IRQn);
 }
 
-void qc_gpio_pin_set(GPIO_TypeDef *GPIOPort, uint16_t pin){
+void kg_gpio_pin_set(GPIO_TypeDef *GPIOPort, uint16_t pin){
   /* set pin in the lower 16bit*/
   GPIOPort->BSRR |= pin;
 }
 
-void qc_gpio_pin_clear(GPIO_TypeDef *GPIOPort, uint16_t pin){
+void kg_gpio_pin_clear(GPIO_TypeDef *GPIOPort, uint16_t pin){
   /* set in the higher 16bit */
   GPIOPort->BSRR |= (pin << 16);
 }
 
-int qc_gpio_pin_get(GPIO_TypeDef *GPIOPort, uint16_t pin){
+int kg_gpio_pin_get(GPIO_TypeDef *GPIOPort, uint16_t pin){
   
   int ret = 0;
   if(GPIOPort->IDR & pin){
-    qc_delay(10000);
+    kg_delay(10000);
     if(GPIOPort->IDR & pin){
       ret = 1;
     }
@@ -61,26 +61,26 @@ int qc_gpio_pin_get(GPIO_TypeDef *GPIOPort, uint16_t pin){
   return ret;
 }
 
-void qc_gpio_port_set(GPIO_TypeDef *GPIOPort){
+void kg_gpio_port_set(GPIO_TypeDef *GPIOPort){
 
 }
 
-void qc_gpio_port_read(GPIO_TypeDef *GPIOPort){
+void kg_gpio_port_read(GPIO_TypeDef *GPIOPort){
 
 }
 
-void qc_gpio_basic_flash(uint32_t d){
-  qc_gpio_pin_clear(GPIOD, LED_GREEN);
-  qc_gpio_pin_set(GPIOD, LED_ORANGE); 
-  qc_gpio_pin_clear(GPIOD, LED_RED);
-  qc_gpio_pin_set(GPIOD, LED_BLUE);
+void kg_gpio_basic_flash(uint32_t d){
+  kg_gpio_pin_clear(GPIOD, LED_GREEN);
+  kg_gpio_pin_set(GPIOD, LED_ORANGE); 
+  kg_gpio_pin_clear(GPIOD, LED_RED);
+  kg_gpio_pin_set(GPIOD, LED_BLUE);
   
-  qc_delay(d);
+  kg_delay(d);
   
-  qc_gpio_pin_set(GPIOD, LED_GREEN);
-  qc_gpio_pin_clear(GPIOD, LED_ORANGE);
-  qc_gpio_pin_set(GPIOD, LED_RED);
-  qc_gpio_pin_clear(GPIOD, LED_BLUE);
+  kg_gpio_pin_set(GPIOD, LED_GREEN);
+  kg_gpio_pin_clear(GPIOD, LED_ORANGE);
+  kg_gpio_pin_set(GPIOD, LED_RED);
+  kg_gpio_pin_clear(GPIOD, LED_BLUE);
 
-  qc_delay(d);
+  kg_delay(d);
 }

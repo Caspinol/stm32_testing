@@ -1,9 +1,9 @@
 #include <stm32f401xc.h>
 #include "systick.h"
 
-static volatile uint32_t theTick = 0;
+static volatile uint32_t the_tick = 0;
 
-void SysTickInit(){
+void kg_systick_init(){
   
   /* 1 processor tick with AHB/8 occurs 
      every 100ns but I want 1us ticks
@@ -23,10 +23,10 @@ void SysTickInit(){
   NVIC_EnableIRQ(SysTick_IRQn);
 }
 
-void SysTickIncrement(){
-  theTick++;
+void kg_systick_increment(){
+  the_tick++;
 }
 
-uint32_t SysTickGetTick(){
-  return theTick;
+uint32_t kg_systick_get_tick(){
+  return the_tick;
 }

@@ -3,9 +3,9 @@
 
 #include <stm32f401xc.h>
 
-void SysTickInit();
-void SysTickIncrement();
-uint32_t SysTickGetTick();
+void kg_systick_init();
+void kg_systick_increment();
+uint32_t kg_systick_get_tick();
 
 
 #endif

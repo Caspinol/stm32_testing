@@ -17,15 +17,30 @@
 
 #define I2C_START(I2CX) (I2CX->CR1 |= I2C_CR1_START)
 #define I2C_STOP(I2CX) (I2CX->CR1 |= I2C_CR1_STOP)
+
+#define I2C_CLEAR_ADDR(I2CX)                                    \
+  do{                                                           \
+    int32 tmp;                                                  \
+    tmp = I2CX->SR1;                                            \
+    tmp = I2CX->SR2;                                            \
+    (void)(tmp);                                                \
+  }while(0)                                                     \
+    
 #define I2C_CHECK_SB(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_SB) == STATE)
 #define I2C_CHECK_ADDR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_ADDR) == STATE)
 #define I2C_CHECK_OVR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_OVR) == STATE)
 #define I2C_CHECK_AF(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_AF) == STATE)
 #define I2C_CHECK_BERR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_BERR) == STATE)
-#define I2C_CHECK_arlo(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_ARLO) == STATE)
+#define I2C_CHECK_ARLO(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_ARLO) == STATE)
 #define I2C_CHECK_TxE(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_TXE) == STATE)
 #define I2C_CHECK_RxNE(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_RXNE) == STATE)
 #define I2C_CHECK_BTF(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_BTF) == STATE)
+#define I2C_CHECK_BUSY(I2CX, STATE) ((I2CX->SR2 & I2C_SR2_BUSY) == STATE)
+
+#define I2C_READ(ADDR) (ADDR |= 0x01) 
+#define I2C_WRITE(ADDR) (ADDR &= 0x01)
+
+static ret_status i2c_master_send(I2C_TypeDef *, int8);
 
 void kg_i2c_init(){
   /* Init GPIOB and GPIOE clock */
@@ -86,14 +101,70 @@ void kg_i2c_init(){
   I2C1->CR1 |= I2C_CR1_PE;
 }
 
-ret_status kg_i2c_master_send(I2C_TypeDef *I2Cx, int8 address, int8 data, int size){
+ret_status kg_i2c_master_read(I2C_TypeDef *I2Cx, int8 address, int8 *data, int size){
+
+  /* maybe i should wait for a while for it to become ready ? */
+  if(I2C_CHECK_BUSY(I2Cx, SET)){
+    return EXIT_FAIL;
+  }
+  
+  /* if address send failed just quit */
+  if(i2c_master_send(I2Cx, I2C_READ(address)) != EXIT_OK){
+    return EXIT_FAIL;
+  }
+  
+  /* clear ADDR flag */
+  I2C_CLEAR_ADDR(I2Cx);
   
   
+  return EXIT_OK;
+}
+
+ret_status kg_i2c_master_write(I2C_TypeDef *I2Cx, int8 address, int8 *data, int size){
+  
+  /* maybe i should wait for a while for it to become ready ? */
+  if(I2C_CHECK_BUSY(I2Cx, SET)){
+    return EXIT_FAIL;
+  }
+
+  /* if address send failed just quit */
+  if(i2c_master_send(I2Cx, I2C_WRITE(address)) != EXIT_OK){
+    return EXIT_FAIL;
+  }
+
+  /* clear ADDR flag */
+  I2C_CLEAR_ADDR(I2Cx);
+
+  while(size > 0){
+    /* wait for DR to become empty*/
+    while(I2C_CHECK_TxE(I2Cx, UNSET));
+    
+    I2Cx->DR = *data;
+    data++;
+    size--;
+    
+    /*dont fully understand this mechanism but...
+      if BTF is set it can be only cleared by writing to DR
+    */
+    if(I2C_CHECK_BTF(I2Cx, SET) && size > 0){
+      I2Cx->DR = *data;
+      data++;
+      size--;
+    }
+  }
+
+  /* wait till transmission is finished*/
+  while(I2C_CHECK_TxE(I2Cx, UNSET));
+  /* and then send STOP to slave */
+  I2C_STOP(I2Cx);
+
+  /*wait till module becomes UN-BUSY */
+  while(I2C_CHECK_BUSY(I2Cx, SET));
 
   return EXIT_OK;
 }
 
-static ret_status i2c_master_write(I2C_TypeDef *I2Cx, int8 address){
+static ret_status i2c_master_send(I2C_TypeDef *I2Cx, int8 address){
 
   int32 tick = kg_systick_get_tick();
 

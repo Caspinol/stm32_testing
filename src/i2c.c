@@ -15,9 +15,24 @@
 
 #define MAX_FLAG_WAIT 500000 /*eee 500ms wait ? */
 
+#define WAIT(x)                                             \
+  do{                                                       \
+    int32 t = kg_systick_get_tick();                        \
+    while((x)){                                             \
+      if((kg_systick_get_tick() - t) > MAX_FLAG_WAIT){      \
+        return EXIT_TIMEOUT;                                \
+      }                                                     \
+    }                                                       \
+  }while(0)                                                 \
+    
 #define I2C_START(I2CX) (I2CX->CR1 |= I2C_CR1_START)
 #define I2C_STOP(I2CX) (I2CX->CR1 |= I2C_CR1_STOP)
-
+#define I2C_RESTART(I2CX)                                       \
+  do{                                                           \
+    I2C_STOP(I2CX);                                             \
+    I2C_START(I2CX);                                            \
+  }while(0)                                                     \
+    
 #define I2C_CLEAR_ADDR(I2CX)                                    \
   do{                                                           \
     int32 tmp;                                                  \
@@ -36,6 +51,9 @@
 #define I2C_CHECK_RxNE(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_RXNE) == STATE)
 #define I2C_CHECK_BTF(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_BTF) == STATE)
 #define I2C_CHECK_BUSY(I2CX, STATE) ((I2CX->SR2 & I2C_SR2_BUSY) == STATE)
+
+#define I2C_SET_ACK(I2CX) (I2CX->CR1 |= I2C_CR1_ACK)
+#define I2C_CLEAR_ACK(I2CX) (I2CX->CR1 &= (~I2C_CR1_ACK))
 
 #define I2C_READ(ADDR) (ADDR |= 0x01) 
 #define I2C_WRITE(ADDR) (ADDR &= 0x01)
@@ -102,6 +120,10 @@ void kg_i2c_init(){
 }
 
 ret_status kg_i2c_master_read(I2C_TypeDef *I2Cx, int8 address, int8 *data, int size){
+  
+  if(size < 1){
+    return EXIT_FAIL;
+  }
 
   /* maybe i should wait for a while for it to become ready ? */
   if(I2C_CHECK_BUSY(I2Cx, SET)){
@@ -113,10 +135,79 @@ ret_status kg_i2c_master_read(I2C_TypeDef *I2Cx, int8 address, int8 *data, int s
     return EXIT_FAIL;
   }
   
-  /* clear ADDR flag */
-  I2C_CLEAR_ADDR(I2Cx);
+  /* another weird stuff */
+  if(size == 1){
+    /* close down sequence for 1 byte read
+       page 471
+    */
+    I2C_CLEAR_ACK(I2Cx);
+    I2C_CLEAR_ADDR(I2Cx);
+    I2C_STOP(I2Cx);
+  }else if(size == 2){
+    /* 2 byte reception sequence
+     */
+    while(I2C_CHECK_ADDR(I2Cx, UNSET));
+    I2C_CLEAR_ACK(I2Cx);
+    I2Cx->CR1 |= I2C_CR1_POS;
+    I2C_CLEAR_ADDR(I2Cx);
+  }else{
+    I2C_SET_ACK(I2Cx);
+    I2C_CLEAR_ADDR(I2Cx);
+  }  
+
+  /* now with this stuff out of way 
+     data can be finally read
+  */
+  while(size > 0){
+    if(size == 1){
+      WAIT(I2C_CHECK_RxNE(I2Cx, UNSET));
+      (*data++) = I2Cx->DR; /* get data */
+      size--;
+    }else if(size == 2){
+      /* similar to the 3 bytes read*/
+      WAIT(I2C_CHECK_BTF(I2Cx, UNSET));
+      
+      I2C_STOP(I2Cx);
+      
+      /* read remaining 2 bytes*/
+      (*data++) = I2Cx->DR;
+      size--;
+      (*data++) = I2Cx->DR;
+      size--;
+    }else if(size == 3){
+      /* special sequence for last 3 bytes */
+      WAIT(I2C_CHECK_BTF(I2Cx, UNSET));
+      I2C_CLEAR_ACK(I2Cx);
+      
+      (*data++) = I2Cx->DR;
+      size--;
+
+      WAIT(I2C_CHECK_BTF(I2Cx, UNSET));
+
+      I2C_STOP(I2Cx);
+
+      /* read remaining 2 bytes*/
+      (*data++) = I2Cx->DR;
+      size--;
+      (*data++) = I2Cx->DR;
+      size--;
+
+    }else{
+      WAIT(I2C_CHECK_RxNE(I2Cx, UNSET));
+      (*data++) = I2Cx->DR; /* get data */
+      size--;
+      if(I2C_CHECK_BTF(I2Cx, SET)){
+        (*data++) = I2Cx->DR; /* get data */
+        size--;
+      }
+    }
+  }
   
+  /* disable POS */
+  I2Cx->CR1 &= ~I2C_CR1_POS;
   
+  /*wait till module becomes UN-BUSY */
+  WAIT(I2C_CHECK_BUSY(I2Cx, SET));
   return EXIT_OK;
 }
 
@@ -137,61 +228,47 @@ ret_status kg_i2c_master_write(I2C_TypeDef *I2Cx, int8 address, int8 *data, int 
 
   while(size > 0){
     /* wait for DR to become empty*/
-    while(I2C_CHECK_TxE(I2Cx, UNSET));
+    WAIT(I2C_CHECK_TxE(I2Cx, UNSET));
     
-    I2Cx->DR = *data;
-    data++;
+    I2Cx->DR = (*data++);
     size--;
     
     /*dont fully understand this mechanism but...
       if BTF is set it can be only cleared by writing to DR
     */
     if(I2C_CHECK_BTF(I2Cx, SET) && size > 0){
-      I2Cx->DR = *data;
-      data++;
+      I2Cx->DR = (*data++);
       size--;
     }
   }
 
   /* wait till transmission is finished*/
-  while(I2C_CHECK_TxE(I2Cx, UNSET));
+  WAIT(I2C_CHECK_TxE(I2Cx, UNSET));
   /* and then send STOP to slave */
   I2C_STOP(I2Cx);
 
   /*wait till module becomes UN-BUSY */
-  while(I2C_CHECK_BUSY(I2Cx, SET));
+  WAIT(I2C_CHECK_BUSY(I2Cx, SET));
 
   return EXIT_OK;
 }
 
 static ret_status i2c_master_send(I2C_TypeDef *I2Cx, int8 address){
 
-  int32 tick = kg_systick_get_tick();
-
   I2C_START(I2Cx);
 
   /* wait for START to send */
-  while(I2C_CHECK_SB(I2Cx, UNSET)){
-    if((kg_systick_get_tick() - tick) > MAX_FLAG_WAIT){
-      /* looks like it's not happening so give up*/
-      return EXIT_TIMEOUT;
-    }
-  }
-  
-  /* write the address with LSB 0 to indicate write*/
-  I2Cx->DR = address;
+  WAIT(I2C_CHECK_SB(I2Cx, UNSET));
 
-  /*reset the tick */
-  tick = kg_systick_get_tick();
+   /* write the address with LSB 0 to indicate write*/
+  I2Cx->DR = address;
+  
   /* and wait for address flag to set */
-  while(I2C_CHECK_ADDR(I2Cx, UNSET)){
-    if((kg_systick_get_tick() - tick) > MAX_FLAG_WAIT){
-      return EXIT_TIMEOUT;
-    }
-    /* also check for Acknowledge failure */
-    if(I2C_CHECK_AF(I2Cx, SET)){
-      return EXIT_FAIL;
-    }
+  WAIT(I2C_CHECK_ADDR(I2Cx, UNSET));
+  
+  /* also check for Acknowledge failure */
+  if(I2C_CHECK_AF(I2Cx, SET)){
+    return EXIT_FAIL;
   }
   return EXIT_OK;
 }

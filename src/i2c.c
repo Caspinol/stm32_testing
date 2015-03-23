@@ -58,9 +58,10 @@
 #define I2C_SET_READ(ADDR) (ADDR |= 0x01) 
 #define I2C_SET_WRITE(ADDR) (ADDR &= 0x01)
 
-static ret_status i2c_master_send(I2C_TypeDef *, int8);
+static ret_status i2c_mem_write(I2C_TypeDef *I2Cx, int8 dev, int8 addr);
+static ret_status i2c_mem_read(I2C_TypeDef *I2Cx, int8 dev, int8 addr);
 
-void kg_i2c_init(){
+void qc_i2c_init(){
 	/* Init GPIOB and GPIOE clock */
 	RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOEEN);
 	/* enable clock for i2c1 peripheral */
@@ -155,6 +156,9 @@ ret_status qc_i2c_write(I2C_TypeDef *I2Cx,
 	/* and generate the STOP signal */
 	I2C_STOP(I2Cx);
 	return EXIT_OK;
+
+ TIMEOUT:
+	return EXIT_TIMEOUT;
 }
 
 ret_status qc_i2c_read(I2C_TypeDef *I2Cx, 
@@ -163,7 +167,7 @@ ret_status qc_i2c_read(I2C_TypeDef *I2Cx,
 		       int8 *data, /* pointer to data buffer */
 		       int8 size){ /* data buffer len */
 	
-	if(i2c_mem_write(I2Cx, dev, addr) != EXIT_OK){
+	if(i2c_mem_read(I2Cx, dev, addr) != EXIT_OK){
 		return EXIT_TIMEOUT;
 	}
 
@@ -197,8 +201,8 @@ ret_status qc_i2c_read(I2C_TypeDef *I2Cx,
 				(*data++) = I2Cx->DR;
 				size--;
 			}else if(size == 2){
-				if(I2C_CHECK_BTF(I2Cx, RESET)){
-					return EXIT_FAILURE;
+				if(I2C_CHECK_BTF(I2Cx, UNSET)){
+					return EXIT_FAIL;
 				}
 				
 				I2C_STOP(I2Cx);
@@ -206,16 +210,16 @@ ret_status qc_i2c_read(I2C_TypeDef *I2Cx,
 				(*data++) = I2Cx->DR;
 				size--;
 			}else{ /* so just read the last 3 bytes */
-				if(I2C_CHECK_BTF(I2Cx, RESET)){
-					return EXIT_FAILURE;
+				if(I2C_CHECK_BTF(I2Cx, UNSET)){
+					return EXIT_FAIL;
 				}
-				I2C_CLEAR_ACK(I2CX);
+				I2C_CLEAR_ACK(I2Cx);
 
 				/* read the data */
 				(*data++) = I2Cx->DR;
 				size--;
-				if(I2C_CHECK_BTF(I2Cx, RESET)){
-					return EXIT_FAILURE;
+				if(I2C_CHECK_BTF(I2Cx, UNSET)){
+					return EXIT_FAIL;
 				}
 
 				I2C_STOP(I2Cx);
@@ -242,9 +246,13 @@ ret_status qc_i2c_read(I2C_TypeDef *I2Cx,
 	}
 	/* disable POS */
 	I2Cx->CR1 &= ~I2C_CR1_POS;
-	WHILE(I2C_CHECK_BUSY(I2Cx, SET));
+	WAIT(I2C_CHECK_BUSY(I2Cx, SET));
 	      
 	return EXIT_OK;
+
+ TIMEOUT:
+
+	return EXIT_TIMEOUT;
 }
 
 static ret_status i2c_mem_write(I2C_TypeDef *I2Cx, int8 dev, int8 addr){

@@ -13,7 +13,7 @@
         INT2 - PE4
 */
 
-#define MAX_FLAG_WAIT 500000 /*eee 500ms wait ? */
+#define MAX_FLAG_WAIT 50000 /*eee 500ms wait ? */
 
 #define WAIT(x)								\
 	do{								\
@@ -71,17 +71,23 @@ void qc_i2c_init(){
 	GPIOB->AFR[1] |= 0x00000040;
 	/* open drain for the i2c pins*/
 	GPIOB->OTYPER |= (GPIO_OTYPER_OT_6 | GPIO_OTYPER_OT_9);
-	/* and pin PE5 as interrupt input */
-	GPIOE->MODER &= ~GPIO_MODER_MODER5;
-	/* max speed */
-	GPIOE->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR5;
-	/* GPIOE pull-down enabled */
-	GPIOE->PUPDR |= GPIO_PUPDR_PUPDR5_1;
-	/*
-	  TODO: set the interrupt config - maybe
-	*/
+
+	/* both pins pull-up */
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR6 | GPIO_PUPDR_PUPDR9);
+	GPIOB->PUPDR |= (GPIO_PUPDR_PUPDR6_0 | GPIO_PUPDR_PUPDR9_0);
 	
-	/* clock strrech enabled */
+	/* High speed */
+	GPIOB->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR6 | GPIO_OSPEEDER_OSPEEDR9);
+  
+	/* Enable I2C1 reset state */
+	RCC->APB1RSTR |= RCC_APB1RSTR_I2C1RST;
+	
+	kg_delay(10000);
+
+	/* Release I2C1 from reset state */
+	RCC->APB1RSTR &= ~RCC_APB1RSTR_I2C1RST;
+
+	/* clock strech enabled */
 	I2C1->CR1 &= ~I2C_CR1_NOSTRETCH;
 	
 	/* clock is 40MHz */
@@ -89,7 +95,7 @@ void qc_i2c_init(){
 	
 	/* 7bit addressing no need to set own
 	   address cause will be master */
-	I2C1->OAR1 |= ~(I2C_OAR1_ADDMODE);
+	I2C1->OAR1 |= ((~I2C_OAR1_ADDMODE) | 43);
 	/* use only OAR1 */
 	I2C1->OAR2 &= 0x00000000;
 	
@@ -167,6 +173,10 @@ ret_status qc_i2c_read(I2C_TypeDef *I2Cx,
 		       int8 *data, /* pointer to data buffer */
 		       int8 size){ /* data buffer len */
 	
+	if(I2C_CHECK_BUSY(I2Cx, SET)){
+		return EXIT_BUSY;
+	}
+
 	if(i2c_mem_read(I2Cx, dev, addr) != EXIT_OK){
 		return EXIT_TIMEOUT;
 	}
@@ -291,7 +301,7 @@ static ret_status i2c_mem_read(I2C_TypeDef *I2Cx, int8 dev, int8 addr){
 	I2C_START(I2Cx);
 	
 	/* wait for START to send */
-	WAIT(I2C_CHECK_SB(I2Cx, UNSET));
+	WAIT(I2C_CHECK_SB(I2Cx, 0));
 	
 	/* write the device address
 	   in write mode

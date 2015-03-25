@@ -41,16 +41,16 @@
 		(void)(tmp);					\
 	}while(0)						\
 		
-#define I2C_CHECK_SB(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_SB) == STATE)
-#define I2C_CHECK_ADDR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_ADDR) == STATE)
-#define I2C_CHECK_OVR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_OVR) == STATE)
-#define I2C_CHECK_AF(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_AF) == STATE)
-#define I2C_CHECK_BERR(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_BERR) == STATE)
-#define I2C_CHECK_ARLO(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_ARLO) == STATE)
-#define I2C_CHECK_TxE(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_TXE) == STATE)
-#define I2C_CHECK_RxNE(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_RXNE) == STATE)
-#define I2C_CHECK_BTF(I2CX, STATE) ((I2CX->SR1 & I2C_SR1_BTF) == STATE)
-#define I2C_CHECK_BUSY(I2CX, STATE) ((I2CX->SR2 & I2C_SR2_BUSY) == STATE)
+#define I2C_CHECK_SB(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_SB) == (I2C_SR1_SB & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_ADDR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_ADDR) == (I2C_SR1_ADDR & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_OVR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_OVR) == (I2C_SR1_OVR & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_AF(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_AF) == (I2C_SR1_AF & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_BERR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_BERR) == (I2C_SR1_BERR & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_ARLO(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_ARLO) == (I2C_SR1_ARLO & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_TxE(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_TXE) == (I2C_SR1_TXE & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_RxNE(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_RXNE) == (I2C_SR2_BUSY & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_BTF(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_BTF) == (I2C_SR2_BUSY & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_BUSY(I2CX, STATE) (((I2CX->SR2 & I2C_SR2_BUSY) == (I2C_SR2_BUSY & 0x0000ffffff)) == STATE)
 
 #define I2C_SET_ACK(I2CX) (I2CX->CR1 |= I2C_CR1_ACK)
 #define I2C_CLEAR_ACK(I2CX) (I2CX->CR1 &= (~I2C_CR1_ACK))
@@ -62,43 +62,44 @@ static ret_status i2c_mem_write(I2C_TypeDef *I2Cx, int8 dev, int8 addr);
 static ret_status i2c_mem_read(I2C_TypeDef *I2Cx, int8 dev, int8 addr);
 
 void qc_i2c_init(){
-	/* Init GPIOB and GPIOE clock */
-	RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOEEN);
+
+	/* Init GPIOB clock */
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
 	/* enable clock for i2c1 peripheral */
 	RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
+
+	/* set pins as AF mode */
+	GPIOB->MODER |= (GPIO_MODER_MODER6_1 | GPIO_MODER_MODER9_1);
 	/* configure the GPIOB pin 6 adn 9 as AF4 */
 	GPIOB->AFR[0] |= 0x04000000;
 	GPIOB->AFR[1] |= 0x00000040;
 	/* open drain for the i2c pins*/
 	GPIOB->OTYPER |= (GPIO_OTYPER_OT_6 | GPIO_OTYPER_OT_9);
-
 	/* both pins pull-up */
 	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR6 | GPIO_PUPDR_PUPDR9);
 	GPIOB->PUPDR |= (GPIO_PUPDR_PUPDR6_0 | GPIO_PUPDR_PUPDR9_0);
-	
 	/* High speed */
 	GPIOB->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR6 | GPIO_OSPEEDER_OSPEEDR9);
-  
+			
 	/* Enable I2C1 reset state */
 	RCC->APB1RSTR |= RCC_APB1RSTR_I2C1RST;
-	
-	kg_delay(10000);
-
+	I2C1->CR1 |= I2C_CR1_SWRST;
+	kg_delay(1000);
 	/* Release I2C1 from reset state */
+	I2C1->CR1 &= ~I2C_CR1_SWRST;
 	RCC->APB1RSTR &= ~RCC_APB1RSTR_I2C1RST;
-
+	
+	/* disable the periferal */
+	I2C1->CR1 &= ~I2C_CR1_PE;
 	/* clock strech enabled */
 	I2C1->CR1 &= ~I2C_CR1_NOSTRETCH;
-	
 	/* clock is 40MHz */
 	I2C1->CR2 |= (40 << 0);
-	
 	/* 7bit addressing no need to set own
 	   address cause will be master */
 	I2C1->OAR1 |= ((~I2C_OAR1_ADDMODE) | 43);
 	/* use only OAR1 */
 	I2C1->OAR2 &= 0x00000000;
-	
 	/*Fm mode and 16/9 duty cycle */
 	I2C1->CCR |= (I2C_CCR_FS | I2C_CCR_DUTY);
 	
@@ -120,7 +121,7 @@ void qc_i2c_init(){
 	   MAX Trise/Tplck = TRISE
 	   300ns/25ns = 12 (+1)
 	*/
-	I2C1->TRISE |= (12 << 0);
+	I2C1->TRISE |= (13 << 0);
 	
 	/* enable the periferal */
 	I2C1->CR1 |= I2C_CR1_PE;

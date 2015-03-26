@@ -41,22 +41,22 @@
 		(void)(tmp);					\
 	}while(0)						\
 		
-#define I2C_CHECK_SB(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_SB) == (I2C_SR1_SB & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_ADDR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_ADDR) == (I2C_SR1_ADDR & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_OVR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_OVR) == (I2C_SR1_OVR & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_AF(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_AF) == (I2C_SR1_AF & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_BERR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_BERR) == (I2C_SR1_BERR & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_ARLO(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_ARLO) == (I2C_SR1_ARLO & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_TxE(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_TXE) == (I2C_SR1_TXE & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_RxNE(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_RXNE) == (I2C_SR2_BUSY & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_BTF(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_BTF) == (I2C_SR2_BUSY & 0x0000ffffff)) == STATE)
-#define I2C_CHECK_BUSY(I2CX, STATE) (((I2CX->SR2 & I2C_SR2_BUSY) == (I2C_SR2_BUSY & 0x0000ffffff)) == STATE)
+#define I2C_CHECK_SB(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_SB) == (I2C_SR1_SB & 0x00ffffff)) == STATE)
+#define I2C_CHECK_ADDR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_ADDR) == (I2C_SR1_ADDR & 0x00ffffff)) == STATE)
+#define I2C_CHECK_OVR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_OVR) == (I2C_SR1_OVR & 0x00ffffff)) == STATE)
+#define I2C_CHECK_AF(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_AF) == (I2C_SR1_AF & 0x00ffffff)) == STATE)
+#define I2C_CHECK_BERR(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_BERR) == (I2C_SR1_BERR & 0x00ffffff)) == STATE)
+#define I2C_CHECK_ARLO(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_ARLO) == (I2C_SR1_ARLO & 0x00ffffff)) == STATE)
+#define I2C_CHECK_TxE(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_TXE) == (I2C_SR1_TXE & 0x00ffffff)) == STATE)
+#define I2C_CHECK_RxNE(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_RXNE) == (I2C_SR1_RXNE & 0x00ffffff)) == STATE)
+#define I2C_CHECK_BTF(I2CX, STATE) (((I2CX->SR1 & I2C_SR1_BTF) == (I2C_SR1_BTF & 0x00ffffff)) == STATE)
+#define I2C_CHECK_BUSY(I2CX, STATE) (((I2CX->SR2 & I2C_SR2_BUSY) == (I2C_SR2_BUSY & 0x00ffffff)) == STATE)
 
 #define I2C_SET_ACK(I2CX) (I2CX->CR1 |= I2C_CR1_ACK)
 #define I2C_CLEAR_ACK(I2CX) (I2CX->CR1 &= (~I2C_CR1_ACK))
 
-#define I2C_SET_READ(ADDR) (ADDR |= 0x01) 
-#define I2C_SET_WRITE(ADDR) (ADDR &= 0x01)
+#define I2C_SET_READ(ADDR) (ADDR |= (int32)0x01) 
+#define I2C_SET_WRITE(ADDR) (ADDR &= ~(int32)0x01)
 
 static ret_status i2c_mem_write(I2C_TypeDef *I2Cx, int8 dev, int8 addr);
 static ret_status i2c_mem_read(I2C_TypeDef *I2Cx, int8 dev, int8 addr);
@@ -307,7 +307,7 @@ static ret_status i2c_mem_read(I2C_TypeDef *I2Cx, int8 dev, int8 addr){
 	/* write the device address
 	   in write mode
 	*/
-	I2Cx->DR =  I2C_SET_WRITE(addr);
+	I2Cx->DR =  I2C_SET_WRITE(dev);
 	
 	/* and wait for address flag to set */
 	WAIT(I2C_CHECK_ADDR(I2Cx, UNSET));
@@ -332,7 +332,7 @@ static ret_status i2c_mem_read(I2C_TypeDef *I2Cx, int8 dev, int8 addr){
 	/* now send device address again 
 	   but to set it in read mode now
 	*/
-	I2Cx->DR =  I2C_SET_WRITE(addr);
+	I2Cx->DR =  I2C_SET_READ(dev);
 	/* and wait for address flag to set */
 	WAIT(I2C_CHECK_ADDR(I2Cx, UNSET));
 	

@@ -14,7 +14,9 @@ void SystemInit(void)
   /* Wait for PLL to end */
   while ((RCC->CR & RCC_CR_PLLRDY) != 0);
 
-  /* HSE as PLL input */
+  /* HSE as PLL input 
+     System Clock at 84MHz
+   */
   RCC->PLLCFGR = PLLM | (PLLN << 6) | (((PLLP >> 1) -1) << 16) | (RCC_PLLCFGR_PLLSRC_HSE) | (PLLQ << 24);  
 
   RCC->APB1ENR |= RCC_APB1ENR_PWREN;
@@ -23,8 +25,11 @@ void SystemInit(void)
   /* Reset CFGR register */
   RCC->CFGR = 0x00000000;
 
-  /* PLL used as system clock and periferal stuff DIV2*/
-  RCC->CFGR |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV2);
+  /* PLL used as system clock
+     periferal stuff DIV2 (Pclk = 21MHz)
+     hardware stuff DIV2 (HCLK = 42MHz)
+  */
+  RCC->CFGR |= (RCC_CFGR_HPRE_DIV2 | RCC_CFGR_PPRE1_DIV2 | RCC_CFGR_PPRE2_DIV2);
 
   /* enable external oscillator*/
   RCC->CR |= RCC_CR_HSEON;

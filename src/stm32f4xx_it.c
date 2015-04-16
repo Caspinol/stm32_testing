@@ -57,7 +57,7 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-extern volatile int modeFlag;
+extern volatile int pwm_val;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -173,7 +173,7 @@ void EXTI0_IRQHandler(void){
   if(EXTI->PR & EXTI_PR_PR0){
     kg_delay(5000);
     while(kg_gpio_pin_get(GPIOA, GPIO_PIN_0));
-      modeFlag ^= 1;
+      pwm_val += 1;
     /* clear it by setting it to 1 */
     EXTI->PR |= EXTI_PR_PR0;
   }

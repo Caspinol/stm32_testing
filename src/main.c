@@ -34,7 +34,6 @@ int main(){
 		PWM_SET_CCR_CH4(TIM4, pwm_val - 15);
 
 		//qc_i2c_read(I2C1, ACCELO_ADDR_READ, WHO_AM_I_ADDR, &buf, 1);
-		
 		//qc_i2c_read(I2C1, MAGNET_ADDR_READ, WHO_AM_I_ADDR, &buf, 1);
 	}
 	

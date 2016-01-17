@@ -1,13 +1,10 @@
-#ifndef __UTILS_H_
-#define __UTILS_H_
+#ifndef __UTILS_H__
+#define __UTILS_H__
 
 #define FALSE  0
 #define UNSET  FALSE
 #define TRUE   !FALSE
 #define SET    TRUE
-
-#define SET_s(TIME) ((TIME) * 1000000)
-#define SET_ms(TIME) ((TIME) * 1000)
 
 typedef uint32_t int32;
 typedef uint16_t int16;
@@ -20,6 +17,8 @@ typedef enum{
   EXIT_BUSY
 }ret_status;
 
-void kg_delay(int32);
+void Delay(__IO int32 nTime);
+
+void TimingDelay_Decrement(void);
 
 #endif

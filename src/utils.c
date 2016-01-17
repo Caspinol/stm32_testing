@@ -1,9 +1,17 @@
-#include <stm32f401xc.h>
+#include <stm32f4xx.h>
 #include "utils.h"
-#include "systick.h"
 
+/* For SysTick */
+static __IO uint32_t TimingDelay;
 
-void kg_delay(uint32_t us){
-  uint32_t tick = kg_systick_get_tick();
-  while((kg_systick_get_tick() - tick) <= us);
+void Delay(__IO uint32_t nTime){
+	TimingDelay = nTime;
+
+	while(TimingDelay != 0);
+}
+
+void TimingDelay_Decrement(void){
+	if (TimingDelay != 0x00){ 
+		TimingDelay--;
+	}
 }

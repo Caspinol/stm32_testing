@@ -1,3 +1,5 @@
 *.hex
-build/*.o
+obj/*.o
 *.elf
+*.map
+*.lst

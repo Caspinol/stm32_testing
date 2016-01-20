@@ -2,13 +2,15 @@
 #define __UTILS_H__
 
 #define FALSE  0
-#define UNSET  FALSE
 #define TRUE   !FALSE
 #define SET    TRUE
 
-typedef uint32_t int32;
-typedef uint16_t int16;
-typedef uint8_t int8;
+#ifdef SH_DEBUG
+#define DEBUG(M, ...)     printf("DEBUG: %s:%d " M "\n",__FILE__, __LINE__, ##__VA_ARGS__)
+#else
+ #define DEBUG(M, ...)
+#endif
+
 
 typedef enum{
   EXIT_OK = 0,
@@ -17,7 +19,7 @@ typedef enum{
   EXIT_BUSY
 }ret_status;
 
-void Delay(__IO int32 nTime);
+void Delay(__IO uint32_t nTime);
 
 void TimingDelay_Decrement(void);
 

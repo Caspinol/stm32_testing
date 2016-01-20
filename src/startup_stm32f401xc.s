@@ -178,7 +178,7 @@ g_pfnVectors:
   .word     DMA1_Stream6_IRQHandler           /* DMA1 Stream 6                */                   
   .word     ADC_IRQHandler                    /* ADC1                         */                   
   .word     0               				          /* Reserved                     */                         
-  .word     0              					          /* Reserved                     */                          
+  .word     0              					          /* Reserved                     */                
   .word     0                                 /* Reserved                     */                          
   .word     0                                 /* Reserved                     */                          
   .word     EXTI9_5_IRQHandler                /* External Line[9:5]s          */                          

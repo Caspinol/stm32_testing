@@ -5,7 +5,7 @@
 
 #include "utils.h"
 
-extern volatile int8 pwm_val;
+extern volatile uint8_t pwm_val;
 
 void NMI_Handler(void)
 {
@@ -55,10 +55,11 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
 	if(EXTI_GetITStatus(EXTI_Line0) != RESET){		
-		if(pwm_val >= 100){
+		pwm_val += 2;
+
+		if(pwm_val > 100){
 			pwm_val = 0;
 		}
-		pwm_val += 2;
 
 		/* Clear the EXTI line 0 pending bit */
 		EXTI_ClearITPendingBit(EXTI_Line0);

@@ -3,3 +3,4 @@ obj/*.o
 *.elf
 *.map
 *.lst
+.DS_Store

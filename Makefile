@@ -23,7 +23,7 @@ OCDARG		= -f board/stm32f4discovery.cfg
 DEFINE       	= -DSTM32F401xx -DUSE_STDPERIPH_DRIVER -DSH_DEBUG
 
 # Search paths
-SRC       	= main.c utils.c gpio.c pwm.c i2c.c
+SRC       	= main.c utils.c gpio.c pwm.c i2c.c accelero.c
 SRC      	+= system_stm32f4xx.c
 SRC      	+= interrupts.c
 SRC		+= stm32f4xx_rcc.c stm32f4xx_tim.c stm32f4xx_exti.c
@@ -35,7 +35,7 @@ INC      	+= -I$(CMSIS_DIR)/Include
 INC		+= -I$(CMSIS_DIR)/Device/ST/STM32F4xx/Include
 INC      	+= -I$(SPL_DIR)/inc
 
-CFLAGS     	= -Wall -g -std=c99 -Os
+CFLAGS     	= -Wall -g -std=c99
 CFLAGS    	+= -mlittle-endian -mcpu=cortex-m4 -mthumb
 CFLAGS    	+= $(INC) $(DEFINE)
 

@@ -5,8 +5,8 @@
 #include "utils.h"
 #include "i2c.h"
 
-#define SLAVE_READ   0x33
-#define SLAVE_WRITE  0x32
+#define I2C_SET_READ(ADDR) ((ADDR) |= 0x01) 
+#define I2C_SET_WRITE(ADDR) ((ADDR) &= 0x01)
 
 static void generate_start(void);
 
@@ -53,14 +53,14 @@ void i2c_init_i2c(void){
   Into @buffer
   As much as @num bytes
  */
-uint8_t i2c_read_data(uint8_t reg, uint8_t *buffer, uint8_t num){
+uint8_t i2c_read_data(uint8_t slave, uint8_t reg, uint8_t *buffer, uint8_t num){
 
 	if(!num) return 1;
 	
 	generate_start();
 	
-	/* Send device address in WWRITE mode */
-	I2C_SendData(I2C1, SLAVE_WRITE);
+	/* Send device address in WRITE mode */
+	I2C_SendData(I2C1, I2C_SET_WRITE(slave));
 
 	/* Check for ADDR bit */
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
@@ -79,7 +79,7 @@ uint8_t i2c_read_data(uint8_t reg, uint8_t *buffer, uint8_t num){
 	while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB));
 
 	/* Send device address but this time in READ mode*/
-	I2C_SendData(I2C1, SLAVE_READ);
+	I2C_SendData(I2C1, I2C_SET_READ(slave));
 
 	/* Check for ADDR and clear */
 	while(!I2C_CheckEvent(I2C1,I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
@@ -111,7 +111,7 @@ uint8_t i2c_read_data(uint8_t reg, uint8_t *buffer, uint8_t num){
   Into @reg
   As much as @num bytes
 */
-uint8_t i2c_write_data(uint8_t reg, uint8_t *data, uint8_t num){
+uint8_t i2c_write_data(uint8_t slave, uint8_t reg, uint8_t *data, uint8_t num){
 
 	if(!num) return 1;
 
@@ -121,7 +121,7 @@ uint8_t i2c_write_data(uint8_t reg, uint8_t *data, uint8_t num){
 	while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
 
 	/* Send WR address */
-	I2C_SendData(I2C1, SLAVE_WRITE);
+	I2C_SendData(I2C1, I2C_SET_WRITE(slave));
 
 	/* Check if slave accepted it */
 	while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));

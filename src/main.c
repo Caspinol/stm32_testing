@@ -5,15 +5,16 @@
 
 #include "gpio.h"
 #include "pwm.h"
-#include "i2c.h"
+#include "accelero.h"
 
 #include "utils.h"
 
-#define PWM_SET_DUTY(DUTY) (((8399 + 1) * (DUTY)) / 100 - 1)
-
 uint8_t pwm_val = 0;
-uint8_t acc_ctr1 = 0;
-uint8_t check = 0;
+int16_t out_x = 0;
+int16_t out_y = 0;
+int16_t out_z = 0;
+
+void update_PWM(void);
 
 int main(void){
 	
@@ -21,7 +22,7 @@ int main(void){
 	   Setup Systick Timer every ~1ms
 	   SysTick
 	*/
-	if (SysTick_Config(SystemCoreClock / 100)){ 
+	if (SysTick_Config(SystemCoreClock / 1000)){ 
 		/* Capture error */ 
 		while (1);
 	}
@@ -29,30 +30,28 @@ int main(void){
 	/* Enable GPIO stuff (LEDs and button) */
 	gpio_setup_gpio();
 	pwm_init_pwm();
-	i2c_init_i2c();
-
-	DEBUG("Running!!!!!!!!!!");
-
-	i2c_read_data(0x20, &acc_ctr1, 1);
-
-	DEBUG("Register [0x20] = [%04x]", acc_ctr1);
-
-	acc_ctr1 = 0x77;
-	i2c_write_data(0x20, &acc_ctr1, 1);
-	DEBUG("Setting data to 0x77");
+	acc_init_acc();
 	
-	i2c_read_data(0x20, &check, 1);
-
-	DEBUG("After change");
-	DEBUG("Register [0x20] = [%04x]", check);
 	while (1){
 		
-		//printf("The PWM duty is %d\n",pwm_val);
-		//printf("The PWM val is %d\n",PWM_SET_DUTY(pwm_val));
+	        update_PWM();
 		
-		pwm_set_compare1(PWM_SET_DUTY(pwm_val));
-		pwm_set_compare2(PWM_SET_DUTY(pwm_val));
-		pwm_set_compare3(PWM_SET_DUTY(pwm_val));
-		pwm_set_compare4(PWM_SET_DUTY(pwm_val));
+		out_x = acc_get_acc_x();
+		DEBUG("x = [%d]", out_x);
+
+		out_y = acc_get_acc_y();
+		DEBUG("y = [%d]", out_y);
+
+		out_z = acc_get_acc_z();
+		DEBUG("z = [%d]", out_z);
+
+		Delay(2000);
 	}
+}
+
+void update_PWM(void){
+	pwm_set_compare1(PWM_SET_DUTY(pwm_val));
+	pwm_set_compare2(PWM_SET_DUTY(pwm_val));
+	pwm_set_compare3(PWM_SET_DUTY(pwm_val));
+	pwm_set_compare4(PWM_SET_DUTY(pwm_val));
 }

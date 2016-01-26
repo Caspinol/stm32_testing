@@ -1,6 +1,8 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+#include <stdio.h>
+
 #define FALSE  0
 #define TRUE   !FALSE
 #define SET    TRUE
@@ -17,7 +19,7 @@ typedef enum{
   EXIT_FAIL,
   EXIT_TIMEOUT,
   EXIT_BUSY
-}ret_status;
+} RETURN_STATUS;
 
 void Delay(__IO uint32_t nTime);
 

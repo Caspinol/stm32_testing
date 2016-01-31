@@ -31,7 +31,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = 0x2000FFFF;    /* end of RAM */
+/*_estack = 0x2000FFFF;    /* end of RAM */
 
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
@@ -43,6 +43,8 @@ MEMORY
 FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 256K
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 64K
 }
+
+topOfStack = ORIGIN(RAM) + LENGTH(RAM);
 
 /* Define output sections */
 SECTIONS

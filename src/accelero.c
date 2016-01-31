@@ -33,7 +33,6 @@
 #define MAG_Y_H 0x08
 
 
-static uint8_t out = 0;
 static uint8_t i2c_initialized = 0; /* Flag indicating wheater i2 module is initialized */
 static uint8_t temperature_sensor_en = 0; /* Is temp sensor enabled */
 
@@ -68,36 +67,39 @@ RETURN_STATUS acc_init_acc(void){
 }
 
 int16_t acc_get_acc_x(void){
-	uint16_t out_x = 0;
+	uint8_t out_h = 0;
+	uint8_t out_l = 0;
+	int16_t out_x = 0;
 	
-	i2c_read_data(ACC_SLAVE, ACC_X_H, &out, 1);
-	out_x = out << 8;
-	i2c_read_data(ACC_SLAVE, ACC_X_L, &out, 1);
-	out_x |= out;
+	i2c_read_data(ACC_SLAVE, ACC_X_H, &out_h, 1);
+	i2c_read_data(ACC_SLAVE, ACC_X_L, &out_l, 1);
+	out_x = ((out_h << 8) + out_l);
 
-	return out_x;
+	return (out_x >> 4);
 }
 
 int16_t acc_get_acc_y(void){
-	uint16_t out_y = 0;
+	uint8_t out_h = 0;
+	uint8_t out_l = 0;
+	int16_t out_y = 0;
 	
-	i2c_read_data(ACC_SLAVE, ACC_Y_H, &out, 1);
-	out_y = out << 8;
-	i2c_read_data(ACC_SLAVE, ACC_Y_L, &out, 1);
-	out_y |= out;
+	i2c_read_data(ACC_SLAVE, ACC_Y_H, &out_h, 1);
+	i2c_read_data(ACC_SLAVE, ACC_Y_L, &out_l, 1);
+	out_y = ((out_h << 8) + out_l);
 
-	return out_y;
+	return (out_y >> 4);
 }
 
 int16_t acc_get_acc_z(void){
-	uint16_t out_z = 0;
+	uint8_t out_h = 0;
+	uint8_t out_l = 0;
+	int16_t out_z = 0;
 
-	i2c_read_data(ACC_SLAVE, ACC_Z_H, &out, 1);
-	out_z = out << 8;
-	i2c_read_data(ACC_SLAVE, ACC_Z_L, &out, 1);
-	out_z |= out;
+	i2c_read_data(ACC_SLAVE, ACC_Z_H, &out_h, 1);
+	i2c_read_data(ACC_SLAVE, ACC_Z_L, &out_l, 1);
+	out_z = ((out_h << 8) + out_l);
 	
-	return out_z;
+	return (out_z >> 4);
 }
 
 /********** MAGNETOMETER **********/
@@ -127,8 +129,8 @@ RETURN_STATUS acc_init_mag(uint8_t temp_sensor){
 		goto ERROR;
 	}
 
-	i2c_write_data(MAG_SLAVE, MAG_CRA_REG_M, &mr_reg_m, 1);
-	i2c_read_data(MAG_SLAVE, MAG_CRA_REG_M, &check, 1);
+	i2c_write_data(MAG_SLAVE, MAG_MR_REG_M, &mr_reg_m, 1);
+	i2c_read_data(MAG_SLAVE, MAG_MR_REG_M, &check, 1);
 	if(check != mr_reg_m){
 		DEBUG("Magnetometer initialization failed!");
 		goto ERROR;
@@ -140,35 +142,15 @@ RETURN_STATUS acc_init_mag(uint8_t temp_sensor){
 	return EXIT_FAIL;
 }
 
-int16_t acc_get_mag_x(void){
-	int16_t out_x = 0;
+uint8_t acc_get_mag_xyz(int16_t * out_mag, int count){
+	uint8_t out[6] = {0};
+
+	if(count != 3) return -1;
 	
-	i2c_read_data(MAG_SLAVE, MAG_X_H, &out, 1);
-	out_x = out << 8;
-	i2c_read_data(MAG_SLAVE, MAG_X_L, &out, 1);
-	out_x |= out;
+	i2c_read_data(MAG_SLAVE, MAG_X_L, out, 6);
+	out_mag[0] = (int16_t) (out[0] << 8) + out[1];
+	out_mag[1] = (int16_t) (out[2] << 8) + out[3];
+	out_mag[2] = (int16_t) (out[4] << 8) + out[5];
 
-	return out_x;
-}
-
-int16_t acc_get_mag_y(void){
-	int16_t out_y = 0;
-	
-	i2c_read_data(MAG_SLAVE, MAG_Y_H, &out, 1);
-	out_y = out << 8;
-	i2c_read_data(MAG_SLAVE, MAG_Y_L, &out, 1);
-	out_y |= out;
-
-	return out_y;
-}
-
-int16_t acc_get_mag_z(void){
-	int16_t out_z = 0;
-
-	i2c_read_data(MAG_SLAVE, MAG_Z_H, &out, 1);
-	out_z = out << 8;
-	i2c_read_data(MAG_SLAVE, MAG_Z_L, &out, 1);
-	out_z |= out;
-	
-	return out_z;
+	return 0;
 }

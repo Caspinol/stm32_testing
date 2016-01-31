@@ -5,8 +5,8 @@
 #include "utils.h"
 #include "i2c.h"
 
-#define I2C_SET_READ(ADDR) ((ADDR) |= 0x01) 
-#define I2C_SET_WRITE(ADDR) ((ADDR) &= 0x01)
+#define I2C_SET_READ(ADDR) (uint8_t)((ADDR) |= 0x01) 
+#define I2C_SET_WRITE(ADDR) (uint8_t)((ADDR) &= ~(1 << 0))
 
 static void generate_start(void);
 

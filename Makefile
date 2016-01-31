@@ -6,6 +6,7 @@ PROGNAME	= stm_out
 LIB_PFX		= /usr/local/STM32_SPL
 SPL_DIR    	= $(LIB_PFX)/STM32F4xx_StdPeriph_Driver
 CMSIS_DIR  	= $(LIB_PFX)/CMSIS
+CMSIS_DSP	= $(CMSIS_DIR)/DSP_Lib/Source
 
 # Compiler tools
 PREFIX     	= arm-none-eabi
@@ -20,7 +21,10 @@ OCD_DIR    	= /Applications/GNU_ARM_Eclipse/OpenOCD/0.10.0-201510281129-dev
 OCD        	= $(OCD_DIR)/bin/openocd
 OCDARG		= -f board/stm32f4discovery.cfg
 
+# Defines for SPL and CMSIS
 DEFINE       	= -DSTM32F401xx -DUSE_STDPERIPH_DRIVER -DSH_DEBUG
+DEFINE		+= -DARM_MATH_CM4
+DEFINE		+= -D__FPU_USED -D__FPU_PRESENT
 
 # Search paths
 SRC       	= main.c utils.c gpio.c pwm.c i2c.c accelero.c
@@ -30,20 +34,28 @@ SRC		+= stm32f4xx_rcc.c stm32f4xx_tim.c stm32f4xx_exti.c
 SRC		+= stm32f4xx_gpio.c stm32f4xx_syscfg.c misc.c
 SRC		+= stm32f4xx_i2c.c
 
+#CMSIS DSP Lib
+#SRC		+= arm_common_tables.c arm_cos_f32.c arm_sin_f32.c
+
 INC       	= -Isrc
 INC      	+= -I$(CMSIS_DIR)/Include
 INC		+= -I$(CMSIS_DIR)/Device/ST/STM32F4xx/Include
 INC      	+= -I$(SPL_DIR)/inc
 
+
 CFLAGS     	= -Wall -g -std=c99
-CFLAGS    	+= -mlittle-endian -mcpu=cortex-m4 -mthumb
+CFLAGS    	+= -mlittle-endian -mcpu=cortex-m4 -mthumb -march=armv7e-m
+CFLAGS		+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 CFLAGS    	+= $(INC) $(DEFINE)
 
-LFLAGS    	= -Wl,--gc-sections -Wl,-Map=$(PROGNAME).map -Tlinker/stm32f4_linker.ld
-LFLAGS   	+= -lc -lrdimon -lgcc -Wall --specs=rdimon.specs -O3
+LFLAGS    	+= -Wl,--gc-sections -Wl,-Map=$(PROGNAME).map -Tlinker/stm32f4_linker.ld
+LFLAGS   	+= -lrdimon -Wall --specs=rdimon.specs -O3
+LFLAGS		+= -lc -lgcc -lm
 
 VPATH      	= src
 VPATH     	+= $(SPL_DIR)/src
+#VPATH		+= $(CMSIS_DSP)/CommonTables
+#VPATH		+= $(CMSIS_DSP)/FastMathFunctions
 
 OBJS       	= $(addprefix obj/,$(SRC:.c=.o))
 

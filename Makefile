@@ -28,7 +28,7 @@ DEFINE		+= -D__FPU_USED -D__FPU_PRESENT
 
 # Search paths
 SRC       	= main.c utils.c gpio.c pwm.c i2c.c accelero.c
-SRC      	+= system_stm32f4xx.c
+SRC      	+= system_stm32f4xx.c time.c
 SRC      	+= interrupts.c
 SRC		+= stm32f4xx_rcc.c stm32f4xx_tim.c stm32f4xx_exti.c
 SRC		+= stm32f4xx_gpio.c stm32f4xx_syscfg.c misc.c

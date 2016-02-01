@@ -21,8 +21,5 @@ typedef enum{
   EXIT_BUSY
 } RETURN_STATUS;
 
-void Delay(__IO uint32_t nTime);
-
-void TimingDelay_Decrement(void);
 
 #endif

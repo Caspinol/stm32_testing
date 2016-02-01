@@ -3,6 +3,7 @@
 #include <stm32f4xx_exti.h>
 #include <stdio.h>
 
+#include "time.h"
 #include "utils.h"
 #include "gpio.h"
 #include "pwm.h"

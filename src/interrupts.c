@@ -2,7 +2,7 @@
 #include <stm32f4xx_gpio.h>
 
 #include "interrupts.h"
-
+#include "time.h"
 #include "utils.h"
 
 extern volatile uint8_t pwm_val;
@@ -49,7 +49,7 @@ void PendSV_Handler(void)
 
 void SysTick_Handler(void)
 {
-	TimingDelay_Decrement();
+	update_systick();
 }
 
 void EXTI0_IRQHandler(void)

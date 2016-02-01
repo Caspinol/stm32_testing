@@ -1,9 +1,10 @@
 #include <stm32f4xx.h>
 #include <math.h>
 
+#include "time.h"
+#include "utils.h"
 #include "accelero.h"
 #include "i2c.h"
-#include "utils.h"
 
 /* Device addresses */
 #define ACC_SLAVE 0b00110010 

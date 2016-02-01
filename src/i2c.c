@@ -2,13 +2,14 @@
 #include <stm32f4xx_rcc.h>
 #include <stm32f4xx_i2c.h>
 
+#include "time.h"
 #include "utils.h"
 #include "i2c.h"
 
 #define I2C_SET_READ(ADDR) (uint8_t)((ADDR) |= 0x01) 
 #define I2C_SET_WRITE(ADDR) (uint8_t)((ADDR) &= ~(1 << 0))
 
-static void generate_start(void);
+static RETURN_STATUS generate_start(void);
 
 void i2c_init_i2c(void){
 
@@ -53,36 +54,36 @@ void i2c_init_i2c(void){
   Into @buffer
   As much as @num bytes
  */
-uint8_t i2c_read_data(uint8_t slave, uint8_t reg, uint8_t *buffer, uint8_t num){
+RETURN_STATUS i2c_read_data(uint8_t slave, uint8_t reg, uint8_t *buffer, uint8_t num){
 
 	if(!num) return 1;
 	
-	generate_start();
+	if(generate_start()) goto ERROR;
 	
 	/* Send device address in WRITE mode */
 	I2C_SendData(I2C1, I2C_SET_WRITE(slave));
 
 	/* Check for ADDR bit */
-	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+	WAIT(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
 	/* Send register address */
 	I2C_SendData(I2C1, reg);
 
 	/* Wait for it... */
-	while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+	WAIT(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 	/* Now RESTART the process */
 	I2C_GenerateSTOP(I2C1, ENABLE);
 	I2C_GenerateSTART(I2C1, ENABLE);
 
 	/* Wait for START bit to set */
-	while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB));
+	WAIT(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB));
 
 	/* Send device address but this time in READ mode*/
 	I2C_SendData(I2C1, I2C_SET_READ(slave));
 
 	/* Check for ADDR and clear */
-	while(!I2C_CheckEvent(I2C1,I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
+	WAIT(!I2C_CheckEvent(I2C1,I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
 
 	/* Now we should be ready to receive num bytes from slave */
 	while(num){
@@ -97,12 +98,15 @@ uint8_t i2c_read_data(uint8_t slave, uint8_t reg, uint8_t *buffer, uint8_t num){
 		}
 
 		/* Wait for the data */
-		while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED));
+		WAIT(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED));
 		*buffer++ = I2C_ReceiveData(I2C1);
 		num--;
 	}
 	
-	return 0;
+	return EXIT_OK;
+
+ ERROR:
+	return EXIT_FAIL;
 }
 
 /*
@@ -111,46 +115,53 @@ uint8_t i2c_read_data(uint8_t slave, uint8_t reg, uint8_t *buffer, uint8_t num){
   Into @reg
   As much as @num bytes
 */
-uint8_t i2c_write_data(uint8_t slave, uint8_t reg, uint8_t *data, uint8_t num){
+RETURN_STATUS i2c_write_data(uint8_t slave, uint8_t reg, uint8_t *data, uint8_t num){
 
 	if(!num) return 1;
 
-	generate_start();
+	if(generate_start()) goto ERROR;
 
 	/* Are we MASTER yet? */
-	while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
+	WAIT(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
 
 	/* Send WR address */
 	I2C_SendData(I2C1, I2C_SET_WRITE(slave));
 
 	/* Check if slave accepted it */
-	while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+	WAIT(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
 	I2C_SendData(I2C1, reg);
 
 	/* Now continue sending rest of data */
 	while(num--){
-		while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF));  
+		WAIT(!I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF));  
 		I2C_SendData(I2C1, *data++);
 	}
 
 	/* Wait for previous transmission to finish */
-	while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF));
+	WAIT(!I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF));
 	/* And... */
 	I2C_GenerateSTOP(I2C1, ENABLE);
 	
-	return 0;
+	return EXIT_OK;
+
+ ERROR:
+	return EXIT_FAIL;
 }
 
-static void generate_start(void){
+static RETURN_STATUS generate_start(void){
 
 	/* wait for peripheral to become available */
 	/* TODO: need to add some timeout for all the waits */
-	while(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
+	WAIT(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
 	
 	I2C_GenerateSTART(I2C1, ENABLE);
 	
 	/* Wait for START bit to set */
-	while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB));
+	WAIT(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB));
 
+	return EXIT_OK;
+	
+ ERROR:
+	return EXIT_FAIL;
 }

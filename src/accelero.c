@@ -1,4 +1,5 @@
 #include <stm32f4xx.h>
+#include <math.h>
 
 #include "accelero.h"
 #include "i2c.h"
@@ -32,9 +33,27 @@
 #define MAG_Y_L 0x07
 #define MAG_Y_H 0x08
 
+#define M_PI 3.14159
 
+#define CALIBRATION_DELAY 200 // ms
+#define CALIBRATION_DURATION (10000 / CALIBRATION_DELAY)
+
+#define DEG_TO_RAD(DEG) ((DEG) * M_PI / 180.0)
+#define RAD_TO_DEG(RAD) ((RAD) * 180.0 / M_PI)
+
+static uint8_t calibration_done = 0;
 static uint8_t i2c_initialized = 0; /* Flag indicating wheater i2 module is initialized */
 static uint8_t temperature_sensor_en = 0; /* Is temp sensor enabled */
+
+static int16_t m_out[3] = {0};
+
+/* Used for calibration */
+static int16_t mag_x_max = 0,
+	mag_x_min = 0,
+	mag_y_max = 0,
+	mag_y_min = 0,
+	mag_z_max = 0,
+	mag_z_min = 0;
 
 static void i2c_init(void){
 
@@ -153,4 +172,80 @@ uint8_t acc_get_mag_xyz(int16_t * out_mag, int count){
 	out_mag[2] = (int16_t) (out[4] << 8) + out[5];
 
 	return 0;
+}
+
+void acc_mag_calibrate(void){
+
+	if(!calibration_done){
+		for(int i = 0; i < CALIBRATION_DURATION; i++){
+			
+			DEBUG("Calibrating...");
+			acc_get_mag_xyz(m_out, 3);
+			
+			if(m_out[MX_AXIS] < mag_x_min) mag_x_min = m_out[MX_AXIS];
+			if(m_out[MX_AXIS] > mag_x_max) mag_x_max = m_out[MX_AXIS];
+			
+			if(m_out[MZ_AXIS] < mag_z_min) mag_z_min = m_out[MZ_AXIS];
+			if(m_out[MZ_AXIS] > mag_z_max) mag_z_max = m_out[MZ_AXIS];
+			
+			if(m_out[MY_AXIS] < mag_y_min) mag_y_min = m_out[MY_AXIS];
+			if(m_out[MY_AXIS] > mag_y_max) mag_y_max = m_out[MY_AXIS];
+			
+			DEBUG("Current:\n\tMAX X = [%d]\n\tMIN X = [%d]\n\tMAX Y = [%d]\n\tMIN Y = [%d]\n\t"
+			      "MAX Z = [%d]\n\tMIN Z = [%d]",
+			      mag_x_max, mag_x_min, mag_y_max, mag_y_min, mag_z_max, mag_z_min);
+			
+			Delay(CALIBRATION_DELAY);
+		}
+		
+		calibration_done = 1;
+	}
+}
+
+float acc_get_heading(void){
+
+	int16_t a_x = acc_get_acc_x();
+	int16_t a_y = acc_get_acc_y();
+	int16_t a_z = acc_get_acc_z();
+	
+	/* Equation 40 */
+	float norAX = (float)(a_x / sqrt(a_x * a_x +
+					 a_y * a_y +
+					 a_z * a_z));
+	
+	float norAY = (float)(a_y / sqrt(a_x * a_x +
+					 a_y * a_y +
+					 a_z * a_z));
+	
+	/* Equation 10 */
+	float pitch = asin(-norAX);
+	float c_pitch = cos(pitch);
+	float s_pitch = sin(pitch);
+	
+	float roll = asin(norAY/c_pitch);
+	float s_roll = sin(roll);
+	float c_roll = cos(roll);
+	
+	
+	acc_get_mag_xyz(m_out, 3);
+	
+	/* 
+	   Calculate the offset based on the min max values
+	   Equation 12
+	*/
+	float MAG_Xc = (float)(m_out[MX_AXIS] - mag_x_min) / (mag_x_max - mag_x_min) * 2 - 1;
+	float MAG_Yc = (float)(m_out[MY_AXIS] - mag_y_min) / (mag_y_max - mag_y_min) * 2 - 1;
+	float MAG_Zc = (float)(m_out[MZ_AXIS] - mag_z_min) / (mag_z_max - mag_z_min) * 2 - 1;
+	
+	float MAG_Xh = MAG_Xc * c_pitch + MAG_Zc * s_pitch;
+	float MAG_Yh = MAG_Xc * s_roll * s_pitch + MAG_Yc * c_roll - MAG_Zc * s_roll * c_pitch;
+	
+	/* Now we can find out the heading */
+	float heading = RAD_TO_DEG(atan2(MAG_Yh, MAG_Xh));
+	
+	if(heading < 0){
+		heading += 360;
+	}
+
+	return heading;
 }

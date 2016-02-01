@@ -23,5 +23,7 @@ int16_t acc_get_acc_z(void);
 
 RETURN_STATUS acc_init_mag(uint8_t temp_sensor);
 uint8_t acc_get_mag_xyz(int16_t * out_mag, int count);
+void acc_mag_calibrate(void);
+float acc_get_heading(void);
 
 #endif /* __ACCELERO_H__ */

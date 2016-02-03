@@ -34,7 +34,9 @@ int main(void){
 	pwm_init_pwm();
 	acc_init_acc();
 	acc_init_mag(0); /* init mag but not the temperature sensor */
-	gyro_init_gyro();
+	if(gyro_init_gyro()){
+		while(1);
+	}
         
 	while (1){
 

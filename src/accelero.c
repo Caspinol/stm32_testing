@@ -192,8 +192,9 @@ void acc_mag_calibrate(void){
 			if(m_out[MY_AXIS] < mag_y_min) mag_y_min = m_out[MY_AXIS];
 			if(m_out[MY_AXIS] > mag_y_max) mag_y_max = m_out[MY_AXIS];
 			
-			DEBUG("Current:\n\tMAX X = [%d]\n\tMIN X = [%d]\n\tMAX Y = [%d]\n\tMIN Y = [%d]\n\t"
-			      "MAX Z = [%d]\n\tMIN Z = [%d]",
+			DEBUG("Current:\n\tMAX X = [%d] MIN X = [%d]"
+			      "\n\tMAX Y = [%d] MIN Y = [%d]"
+			      "\n\tMAX Z = [%d] MIN Z = [%d]",
 			      mag_x_max, mag_x_min, mag_y_max, mag_y_min, mag_z_max, mag_z_min);
 			
 			Delay(CALIBRATION_DELAY);
@@ -209,16 +210,11 @@ float acc_get_heading(void){
 	int16_t a_y = acc_get_acc_y();
 	int16_t a_z = acc_get_acc_z();
 	
-	/* Equation 40 */
-	float norAX = (float)(a_x / sqrt(a_x * a_x +
-					 a_y * a_y +
-					 a_z * a_z));
+	/* Equation 40 Normalize the axis readings */
+	float norAX = (float)(a_x / sqrt(a_x * a_x + a_y * a_y + a_z * a_z));
+	float norAY = (float)(a_y / sqrt(a_x * a_x + a_y * a_y + a_z * a_z));
 	
-	float norAY = (float)(a_y / sqrt(a_x * a_x +
-					 a_y * a_y +
-					 a_z * a_z));
-	
-	/* Equation 10 */
+	/* Equation 10 Calculate pitch and roll */
 	float pitch = asin(-norAX);
 	float c_pitch = cos(pitch);
 	float s_pitch = sin(pitch);

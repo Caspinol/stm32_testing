@@ -27,15 +27,13 @@ DEFINE		+= -DARM_MATH_CM4
 DEFINE		+= -D__FPU_USED -D__FPU_PRESENT
 
 # Search paths
-SRC       	= main.c utils.c gpio.c pwm.c i2c.c accelero.c
-SRC      	+= system_stm32f4xx.c time.c
-SRC      	+= interrupts.c
+SRC       	= main.c gpio.c pwm.c i2c.c accelero.c
+SRC      	+= time.c spi.c gyro.c
+SRC      	+= interrupts.c system_stm32f4xx.c misc.c
 SRC		+= stm32f4xx_rcc.c stm32f4xx_tim.c stm32f4xx_exti.c
-SRC		+= stm32f4xx_gpio.c stm32f4xx_syscfg.c misc.c
-SRC		+= stm32f4xx_i2c.c
+SRC		+= stm32f4xx_gpio.c stm32f4xx_syscfg.c 
+SRC		+= stm32f4xx_i2c.c stm32f4xx_spi.c
 
-#CMSIS DSP Lib
-#SRC		+= arm_common_tables.c arm_cos_f32.c arm_sin_f32.c
 
 INC       	= -Isrc
 INC      	+= -I$(CMSIS_DIR)/Include
@@ -54,8 +52,6 @@ LFLAGS		+= -lc -lgcc -lm
 
 VPATH      	= src
 VPATH     	+= $(SPL_DIR)/src
-#VPATH		+= $(CMSIS_DSP)/CommonTables
-#VPATH		+= $(CMSIS_DSP)/FastMathFunctions
 
 OBJS       	= $(addprefix obj/,$(SRC:.c=.o))
 

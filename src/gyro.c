@@ -7,6 +7,7 @@
 #define WHO_AM_I 0x0f
 #define I_AM_GROOT 0b11010100
 #define GYRO_CTRL_REG1 0x20
+#define GYRO_CTRL_REG4 0x23
 
 #define GYRO_OUT_X_L 0x28
 #define GYRO_OUT_X_H 0x29
@@ -20,14 +21,20 @@ static uint8_t gyro_initialized = 0;
 RETURN_STATUS gyro_init_gyro(void){
 	spi_init_spi();
 	/* DR = 11, BW = 00, PD = 1, X and Y enabled */
-	uint8_t setup = 0b11001011;
+	uint8_t setup = 0b00001011;
 	if(spi_write_data(GYRO_CTRL_REG1, setup)){
 		goto ERROR;
 	}
+	
 	uint8_t tmp = 0;
 	spi_read_data(GYRO_CTRL_REG1, &tmp);
 	if(setup != tmp){
 		DEBUG("GYRO initialization failed. Expected [%d] but got [%d].", setup, tmp);
+		goto ERROR;
+	}
+
+	setup = 0b10000000;
+	if(spi_write_data(GYRO_CTRL_REG4, setup)){
 		goto ERROR;
 	}
 	
@@ -52,7 +59,7 @@ int16_t gyro_get_X(void){
 	spi_read_data(GYRO_OUT_X_L, &x_l);
 	spi_read_data(GYRO_OUT_X_H, &x_h);
 
-	return (x_h << 8) + x_l;
+	return ((x_h << 8) | x_l);
 }
 
 int16_t gyro_get_Y(void){
@@ -63,6 +70,6 @@ int16_t gyro_get_Y(void){
 	spi_read_data(GYRO_OUT_Y_L, &y_l);
 	spi_read_data(GYRO_OUT_Y_H, &y_h);
 
-	return (y_h << 8) + y_l;
+	return ((y_h << 8) | y_l);
 }
 

@@ -17,5 +17,6 @@
 void Delay(__IO uint32_t time);
 void update_systick(void);
 uint32_t get_systick(void);
+void tim_init_tim3(void);
 
 #endif /* __TIME_H__ */

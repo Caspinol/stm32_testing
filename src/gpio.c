@@ -8,21 +8,21 @@
 
 #define D2s 2000 // delay of 2 seconds
 
-#if 0
 static void gpio_setup_LEDs(void){
 
-	/* GPIOD Periph clock enable */
+GPIO_InitTypeDef GPIO_InitStruct;
+
+/* GPIOD Periph clock enable */
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	
 	/* Configure PD12, PD13, PD14 and PD15 in output pushpull mode */
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13| GPIO_Pin_14| GPIO_Pin_15;
+	GPIO_InitStruct.GPIO_Pin = LED_GREEN | LED_RED | LED_BLUE | LED_YELLOW;
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOD, &GPIO_InitStruct);
 }
-#endif
 
 /*
   Sets the button on PA0 and the EXTI for it
@@ -65,29 +65,39 @@ static void gpio_setup_Button(void){
 }
 
 void gpio_setup_gpio(void){
-
-	//gpio_setup_LEDs();
+	gpio_setup_LEDs();
 	gpio_setup_Button();
 }
 
 void gpio_do_flash(void){
-	GPIO_SetBits(GPIOD, GPIO_Pin_12);
-	
+	gpio_LED_ON(LED_GREEN);
 	Delay(D2s);
-	
-	GPIO_SetBits(GPIOD, GPIO_Pin_13);
-	
+	gpio_LED_ON(LED_YELLOW);
 	Delay(D2s);
-	
-	GPIO_SetBits(GPIOD, GPIO_Pin_14);
-	
+	gpio_LED_ON(LED_RED);
 	Delay(D2s);
-	
-	GPIO_SetBits(GPIOD, GPIO_Pin_15);
-	
+	gpio_LED_ON(LED_BLUE);
 	Delay(5000);
-	
-	GPIO_ResetBits(GPIOD, GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15);
-	
+	gpio_LED_OFF(LED_GREEN | LED_YELLOW | LED_RED | LED_BLUE);
 	Delay(10000);
+}
+
+void gpio_LED_ON(uint16_t led){
+	GPIO_SetBits(GPIOD, led);
+}
+
+void gpio_LED_OFF(uint16_t led){
+	GPIO_ResetBits(GPIOD, led);
+}
+
+void gpio_LED_TOGGLE(uint16_t led){
+	static uint8_t is_on = 0;
+
+	if(is_on){
+		gpio_LED_OFF(led);
+		is_on = 1;
+	}else{
+		gpio_LED_ON(led);
+		is_on = 0;
+	}
 }

@@ -40,7 +40,8 @@ int main(void){
 	}
 
 	/* Enable GPIO stuff (LEDs and button) */
-	//gpio_setup_gpio();
+	gpio_setup_gpio();
+	tim_init_tim3();
 	//pwm_init_pwm();
 	//acc_init_acc();
 	//acc_init_mag(0); /* init mag but not the temperature sensor */
@@ -68,8 +69,8 @@ int main(void){
 			angle += raw_gyro * DT;
 			
  			DEBUG("GYRO(X = [%g], raw = [%g])", angle, raw_gyro);
+			gyro = 0;
  		}
-		//update_PWM();
 	}
 }
 

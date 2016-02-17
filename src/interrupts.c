@@ -1,6 +1,7 @@
 #include <stm32f4xx.h>
 #include <stm32f4xx_gpio.h>
 
+#include "gpio.h"
 #include "interrupts.h"
 #include "time.h"
 #include "utils.h"
@@ -68,5 +69,10 @@ void EXTI0_IRQHandler(void)
 }
 
 void TIM3_IRQHandler(void){
-	gyro = 1;
+
+	if(TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET){
+		gyro = 1;
+		gpio_LED_TOGGLE(LED_BLUE);
+		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+	}
 }

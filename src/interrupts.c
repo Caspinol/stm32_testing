@@ -6,6 +6,7 @@
 #include "utils.h"
 
 extern volatile uint8_t pwm_val;
+extern volatile uint8_t gyro;
 
 void NMI_Handler(void)
 {
@@ -66,3 +67,6 @@ void EXTI0_IRQHandler(void)
 	}
 }
 
+void TIM3_IRQHandler(void){
+	gyro = 1;
+}

@@ -9,10 +9,10 @@
 #define D2s 2000 // delay of 2 seconds
 
 static void gpio_setup_LEDs(void){
-
-GPIO_InitTypeDef GPIO_InitStruct;
-
-/* GPIOD Periph clock enable */
+	
+	GPIO_InitTypeDef GPIO_InitStruct;
+	
+	/* GPIOD Periph clock enable */
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	
 	/* Configure PD12, PD13, PD14 and PD15 in output pushpull mode */
@@ -91,13 +91,5 @@ void gpio_LED_OFF(uint16_t led){
 }
 
 void gpio_LED_TOGGLE(uint16_t led){
-	static uint8_t is_on = 0;
-
-	if(is_on){
-		gpio_LED_OFF(led);
-		is_on = 1;
-	}else{
-		gpio_LED_ON(led);
-		is_on = 0;
-	}
+        GPIO_ToggleBits(GPIOD, led);
 }

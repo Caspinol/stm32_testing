@@ -10,21 +10,17 @@
 #include "accelero.h"
 #include "gyro.h"
 
-
-#define BETA 0.3
-#define SENSITIVITY 0.00875
 #define DT 0.02;
 
-volatile uint8_t pwm_val = 0;
-volatile uint8_t gyro = 0;
+volatile uint8_t pwm_val = 0,
+	gyro = 0;
 
 static float heading = 0;
-static int16_t gyro_x = 0;
-static int16_t gyro_y = 0;
-static float gyro_calibration_tmp = 0;
-static float gyro_x_offset = 0;
-static float raw_gyro = 0;
-static float angle = 0.0;
+
+static float angle_x = 0.0,
+	angle_y = 0.0,
+	angle_z = 0.0;
+static struct gyro_xyz_t g_xyz;
 
 //void update_PWM(void);
 
@@ -48,15 +44,7 @@ int main(void){
 	if(gyro_init_gyro()){
 		while(1);
 	}
-
-	for(int i = 0; i < 100; i++){
- 		gyro_calibration_tmp += gyro_get_X() * SENSITIVITY;
-		DEBUG("GYRO(X = [%g])", gyro_calibration_tmp);
- 	}
 	
- 	gyro_x_offset = gyro_calibration_tmp/100.0;
-	DEBUG("GYRO OFFSET = [%g]", gyro_x_offset);
-        
 	while (1){
 
 		/* Lets first start from calibrating the mmeter */
@@ -64,11 +52,14 @@ int main(void){
 		
 	        //update_PWM();
 		if(gyro){
-			raw_gyro = gyro_get_X() * SENSITIVITY;
+			gyro_get_xyz(&g_xyz);
 			
-			angle += raw_gyro * DT;
+			angle_x += g_xyz.x * DT;
+			angle_y += g_xyz.y * DT;
+			angle_z += g_xyz.z * DT;
 			
- 			DEBUG("GYRO(X = [%g], raw = [%g])", angle, raw_gyro);
+ 			DEBUG("GYRO(X = [%g], Y = [%g], Z = [%g])",
+			      angle_x*10, angle_y*10, angle_z*10);
 			gyro = 0;
  		}
 	}

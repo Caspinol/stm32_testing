@@ -3,8 +3,24 @@
 
 #include "utils.h"
 
+#define SENSITIVITY 0.00875
+
+/* Stores the raw values (pre-processed) */
+struct gyro_xyz_raw_t {
+	int16_t x;
+	int16_t y;
+	int16_t z;
+};
+
+/* Processed usable values */
+struct gyro_xyz_t {
+	float x;
+	float y;
+	float z;
+};
+
 RETURN_STATUS gyro_init_gyro(void);
-int16_t gyro_get_X(void);
-int16_t gyro_get_Y(void);
+RETURN_STATUS gyro_get_xyz(struct gyro_xyz_t * g_xyz);
+
 
 #endif /* __GYRO_H__ */

@@ -41,13 +41,13 @@ INC		+= -I$(CMSIS_DIR)/Device/ST/STM32F4xx/Include
 INC      	+= -I$(SPL_DIR)/inc
 
 
-CFLAGS     	= -Wall -g -std=c99
-CFLAGS    	+= -mlittle-endian -mcpu=cortex-m4 -mthumb -march=armv7e-m
+CFLAGS     	= -Wall -g -std=c99 -Wextra -O2 -mlittle-endian
+CFLAGS    	+= -mcpu=cortex-m4 -mthumb -march=armv7e-m -mtune=cortex-m4
 CFLAGS		+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 CFLAGS    	+= $(INC) $(DEFINE)
 
 LFLAGS    	+= -Wl,--gc-sections -Wl,-Map=$(PROGNAME).map -Tlinker/stm32f4_linker.ld
-LFLAGS   	+= -lrdimon -Wall --specs=rdimon.specs -O3
+LFLAGS   	+= -lrdimon -Wall --specs=rdimon.specs
 LFLAGS		+= -lc -lgcc -lm
 
 VPATH      	= src

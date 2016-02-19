@@ -17,21 +17,12 @@
 #define GYRO_OUT_Z_L 0x2c
 #define GYRO_OUT_Z_H 0x2d
 
-
-
 #define CALIB_SAMPLES 100
 
 static uint8_t gyro_initialized = 0;
-static float gyro_x_offset = 0;
-static float gyro_y_offset = 0;
-static float gyro_z_offset = 0;
-
-/* Low Pass Filter storage variables */
-#define LP_BETA 0.025
-
-static float lp_x = 0,
-	lp_y = 0,
-	lp_z = 0;
+static float g_xoffset = 0;
+static float g_yoffset = 0;
+static float g_zoffset = 0;
 
 /* Static functions */
 static RETURN_STATUS gyro_calibrate(uint8_t samples);
@@ -89,12 +80,12 @@ static RETURN_STATUS gyro_calibrate(uint8_t samples){
 		g_z += g_raw.z;
  	}
 	
- 	gyro_x_offset = g_x / samples;
-	gyro_y_offset = g_y / samples;
-	gyro_z_offset = g_z / samples;
+ 	g_xoffset = g_x / samples;
+	g_yoffset = g_y / samples;
+	g_zoffset = g_z / samples;
 
 	DEBUG("Gyro offset: X = [%g], Y = [%g], Z = [%g]",
-	      gyro_x_offset, gyro_y_offset, gyro_z_offset);
+	      g_xoffset, g_yoffset, g_zoffset);
 	return EXIT_OK;
  ERROR:
 	return EXIT_FAIL;
@@ -135,17 +126,9 @@ RETURN_STATUS gyro_get_xyz(struct gyro_xyz_t * g_xyz){
 
 	if(gyro_get_xyz_raw(&g_raw)) goto ERROR; 
 
-	//g_raw.x = SENSITIVITY * (g_raw.x);
-	//g_raw.y = SENSITIVITY * (g_raw.y);
-	//g_raw.z = SENSITIVITY * (g_raw.z);
-	
-	//lp_x = lp_x - (LP_BETA * (lp_x - g_raw.x));
-	//lp_y = lp_y - (LP_BETA * (lp_y - g_raw.y));
-	//lp_z = lp_z - (LP_BETA * (lp_z - g_raw.z));
-
-	g_xyz->x = (float) SENSITIVITY * g_raw.x;
-	g_xyz->y = (float) SENSITIVITY * g_raw.y;
-	g_xyz->z = (float) SENSITIVITY * g_raw.z;
+	g_xyz->x = (float) SENSITIVITY * (g_raw.x - g_xoffset);
+	g_xyz->y = (float) SENSITIVITY * (g_raw.y - g_yoffset);
+	g_xyz->z = (float) SENSITIVITY * (g_raw.z - g_zoffset);
 	
 	return EXIT_OK;
  ERROR:

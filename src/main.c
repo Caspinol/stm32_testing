@@ -12,7 +12,7 @@
 
 #define DT 0.02;
 
-volatile uint8_t pwm_val = 0,
+volatile uint_fast8_t pwm_val = 0,
 	gyro = 0;
 
 static float heading = 0;
@@ -20,7 +20,8 @@ static float heading = 0;
 static float angle_x = 0.0,
 	angle_y = 0.0,
 	angle_z = 0.0;
-static struct gyro_xyz_t g_xyz;
+
+static gyro_xyz_t g_xyz;
 
 //void update_PWM(void);
 
@@ -59,7 +60,7 @@ int main(void){
 			angle_z += g_xyz.z * DT;
 			
  			DEBUG("GYRO(X = [%g], Y = [%g], Z = [%g])",
-			      angle_x*10, angle_y*10, angle_z*10);
+			      angle_x * 10, angle_y * 10, angle_z * 10);
 			gyro = 0;
  		}
 	}

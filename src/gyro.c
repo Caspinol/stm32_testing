@@ -26,10 +26,12 @@ static float g_zoffset = 0;
 
 /* Static functions */
 static RETURN_STATUS gyro_calibrate(uint8_t samples);
-static RETURN_STATUS gyro_get_xyz_raw(struct gyro_xyz_raw_t * g_raw);
+static RETURN_STATUS gyro_get_xyz_raw(gyro_xyz_raw_t * g_raw);
 
 RETURN_STATUS gyro_init_gyro(void){
+
 	spi_init_spi();
+
 	/* DR = 00, BW = 00, PD = 1, Z, X and Y enabled */
 	uint8_t setup = 0b00001111;
 	if(spi_write_data(GYRO_CTRL_REG1, setup)){
@@ -65,7 +67,7 @@ RETURN_STATUS gyro_init_gyro(void){
 }
 
 static RETURN_STATUS gyro_calibrate(uint8_t samples){
-	struct gyro_xyz_raw_t g_raw;
+	gyro_xyz_raw_t g_raw;
 	float g_x = 0,
 		g_y = 0,
 		g_z = 0;
@@ -91,7 +93,7 @@ static RETURN_STATUS gyro_calibrate(uint8_t samples){
 	return EXIT_FAIL;
 }
 
-static RETURN_STATUS gyro_get_xyz_raw(struct gyro_xyz_raw_t * g_raw){
+static RETURN_STATUS gyro_get_xyz_raw(gyro_xyz_raw_t * g_raw){
 	uint8_t x_l, x_h, y_l, y_h, z_l, z_h;
 	
 	if(!gyro_initialized) goto ERROR;
@@ -120,9 +122,9 @@ static RETURN_STATUS gyro_get_xyz_raw(struct gyro_xyz_raw_t * g_raw){
    The LPF is just:
    Y(n) = (1-ß)*Y(n-1) + (ß*X(n))) = Y(n-1) - (ß*(Y(n-1)-X(n)));
 */
-RETURN_STATUS gyro_get_xyz(struct gyro_xyz_t * g_xyz){
+RETURN_STATUS gyro_get_xyz(gyro_xyz_t * g_xyz){
 	
-	struct gyro_xyz_raw_t g_raw;
+	gyro_xyz_raw_t g_raw;
 
 	if(gyro_get_xyz_raw(&g_raw)) goto ERROR; 
 

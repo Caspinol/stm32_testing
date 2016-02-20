@@ -2,9 +2,9 @@
 #include "time.h"
 
 /* For SysTick */
-static __IO uint32_t systick_heartbeat;
+static __IO uint_fast32_t systick_heartbeat;
 
-void Delay(__IO uint32_t time){
+void Delay(__IO uint_fast32_t time){
 	systick_heartbeat = time;
 
 	while(systick_heartbeat != 0);
@@ -16,7 +16,7 @@ void update_systick(void){
 	}
 }
 
-uint32_t get_systick(void){
+uint_fast32_t get_systick(void){
 	return systick_heartbeat;
 }
 

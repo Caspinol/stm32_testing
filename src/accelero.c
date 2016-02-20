@@ -46,8 +46,6 @@ static uint8_t calibration_done = 0;
 static uint8_t i2c_initialized = 0; /* Flag indicating wheater i2 module is initialized */
 static uint8_t temperature_sensor_en = 0; /* Is temp sensor enabled */
 
-static int16_t m_out[3] = {0};
-
 /* Used for calibration */
 static int16_t mag_x_max = 0,
 	mag_x_min = 0,
@@ -86,40 +84,23 @@ RETURN_STATUS acc_init_acc(void){
 	return EXIT_FAIL;
 }
 
-int16_t acc_get_acc_x(void){
+RETURN_STATUS acc_get_acc_xyz(acc_xyz_t * acc_out){
 	uint8_t out_h = 0;
 	uint8_t out_l = 0;
-	int16_t out_x = 0;
 	
 	i2c_read_data(ACC_SLAVE, ACC_X_H, &out_h, 1);
 	i2c_read_data(ACC_SLAVE, ACC_X_L, &out_l, 1);
-	out_x = ((out_h << 8) + out_l);
+	acc_out->x = ((out_h << 8) + out_l) >> 4;
 
-	return (out_x >> 4);
-}
-
-int16_t acc_get_acc_y(void){
-	uint8_t out_h = 0;
-	uint8_t out_l = 0;
-	int16_t out_y = 0;
-	
 	i2c_read_data(ACC_SLAVE, ACC_Y_H, &out_h, 1);
 	i2c_read_data(ACC_SLAVE, ACC_Y_L, &out_l, 1);
-	out_y = ((out_h << 8) + out_l);
-
-	return (out_y >> 4);
-}
-
-int16_t acc_get_acc_z(void){
-	uint8_t out_h = 0;
-	uint8_t out_l = 0;
-	int16_t out_z = 0;
+	acc_out->y = ((out_h << 8) + out_l) >> 4;
 
 	i2c_read_data(ACC_SLAVE, ACC_Z_H, &out_h, 1);
 	i2c_read_data(ACC_SLAVE, ACC_Z_L, &out_l, 1);
-	out_z = ((out_h << 8) + out_l);
+	acc_out->z = ((out_h << 8) + out_l) >> 4;
 	
-	return (out_z >> 4);
+	return EXIT_OK;
 }
 
 /********** MAGNETOMETER **********/
@@ -157,40 +138,38 @@ RETURN_STATUS acc_init_mag(uint8_t temp_sensor){
 	}
 
 	return EXIT_OK;
-
  ERROR:
 	return EXIT_FAIL;
 }
 
-uint8_t acc_get_mag_xyz(int16_t * out_mag, int count){
+RETURN_STATUS acc_get_mag_xyz(mag_xyz_t * out_mag){
 	uint8_t out[6] = {0};
-
-	if(count != 3) return -1;
 	
 	i2c_read_data(MAG_SLAVE, MAG_X_L, out, 6);
-	out_mag[0] = (int16_t) (out[0] << 8) + out[1];
-	out_mag[1] = (int16_t) (out[2] << 8) + out[3];
-	out_mag[2] = (int16_t) (out[4] << 8) + out[5];
+	out_mag->x = (int16_t) (out[0] << 8) + out[1];
+	out_mag->z = (int16_t) (out[2] << 8) + out[3];
+	out_mag->y = (int16_t) (out[4] << 8) + out[5];
 
-	return 0;
+	return EXIT_OK;
 }
 
 void acc_mag_calibrate(void){
 
+	mag_xyz_t m_out;
 	if(!calibration_done){
 		for(int i = 0; i < CALIBRATION_DURATION; i++){
 			
 			DEBUG("Calibrating...");
-			acc_get_mag_xyz(m_out, 3);
+			acc_get_mag_xyz(&m_out);
 			
-			if(m_out[MX_AXIS] < mag_x_min) mag_x_min = m_out[MX_AXIS];
-			if(m_out[MX_AXIS] > mag_x_max) mag_x_max = m_out[MX_AXIS];
+			if(m_out.x < mag_x_min) mag_x_min = m_out.x;
+			if(m_out.x > mag_x_max) mag_x_max = m_out.x;
 			
-			if(m_out[MZ_AXIS] < mag_z_min) mag_z_min = m_out[MZ_AXIS];
-			if(m_out[MZ_AXIS] > mag_z_max) mag_z_max = m_out[MZ_AXIS];
+			if(m_out.z < mag_z_min) mag_z_min = m_out.z;
+			if(m_out.z > mag_z_max) mag_z_max = m_out.z;
 			
-			if(m_out[MY_AXIS] < mag_y_min) mag_y_min = m_out[MY_AXIS];
-			if(m_out[MY_AXIS] > mag_y_max) mag_y_max = m_out[MY_AXIS];
+			if(m_out.y < mag_y_min) mag_y_min = m_out.y;
+			if(m_out.y > mag_y_max) mag_y_max = m_out.y;
 			
 			DEBUG("Current:\n\tMAX X = [%d] MIN X = [%d]"
 			      "\n\tMAX Y = [%d] MIN Y = [%d]"
@@ -206,13 +185,18 @@ void acc_mag_calibrate(void){
 
 float acc_get_heading(void){
 
-	int16_t a_x = acc_get_acc_x();
-	int16_t a_y = acc_get_acc_y();
-	int16_t a_z = acc_get_acc_z();
+	mag_xyz_t m_out;
+	acc_xyz_t a_out;
+	
+	acc_get_acc_xyz(&a_out);
 	
 	/* Equation 40 Normalize the axis readings */
-	float norAX = (float)(a_x / sqrt(a_x * a_x + a_y * a_y + a_z * a_z));
-	float norAY = (float)(a_y / sqrt(a_x * a_x + a_y * a_y + a_z * a_z));
+	float norAX = (float)(a_out.x / sqrt(a_out.x * a_out.x +
+					     a_out.y * a_out.y +
+					     a_out.z * a_out.z));
+	float norAY = (float)(a_out.y / sqrt(a_out.x * a_out.x +
+					     a_out.y * a_out.y +
+					     a_out.z * a_out.z));
 	
 	/* Equation 10 Calculate pitch and roll */
 	float pitch = asin(-norAX);
@@ -224,15 +208,15 @@ float acc_get_heading(void){
 	float c_roll = cos(roll);
 	
 	
-	acc_get_mag_xyz(m_out, 3);
+	acc_get_mag_xyz(&m_out);
 	
 	/* 
 	   Calculate the offset based on the min max values
 	   Equation 12
 	*/
-	float MAG_Xc = (float)(m_out[MX_AXIS] - mag_x_min) / (mag_x_max - mag_x_min) * 2 - 1;
-	float MAG_Yc = (float)(m_out[MY_AXIS] - mag_y_min) / (mag_y_max - mag_y_min) * 2 - 1;
-	float MAG_Zc = (float)(m_out[MZ_AXIS] - mag_z_min) / (mag_z_max - mag_z_min) * 2 - 1;
+	float MAG_Xc = (float)(m_out.x - mag_x_min) / (mag_x_max - mag_x_min) * 2 - 1;
+	float MAG_Yc = (float)(m_out.y - mag_y_min) / (mag_y_max - mag_y_min) * 2 - 1;
+	float MAG_Zc = (float)(m_out.z - mag_z_min) / (mag_z_max - mag_z_min) * 2 - 1;
 	
 	float MAG_Xh = MAG_Xc * c_pitch + MAG_Zc * s_pitch;
 	float MAG_Yh = MAG_Xc * s_roll * s_pitch + MAG_Yc * c_roll - MAG_Zc * s_roll * c_pitch;

@@ -34,26 +34,30 @@
 #define MAG_Y_L 0x07
 #define MAG_Y_H 0x08
 
-#define M_PI 3.14159
-
 #define CALIBRATION_DELAY 200 // ms
-#define CALIBRATION_DURATION (10000 / CALIBRATION_DELAY)
+#define CALIBRATION_DURATION (5000 / CALIBRATION_DELAY)
 
-#define DEG_TO_RAD(DEG) ((DEG) * M_PI / 180.0)
-#define RAD_TO_DEG(RAD) ((RAD) * 180.0 / M_PI)
+#define M_PI 3.14159
+#define D180_OVER_PI (float)(180.0 / M_PI)
+#define PI_OVER_D180 (float)(M_PI / 180.0)
+
+#define DEG_TO_RAD(DEG) (float)((DEG) * PI_OVER_D180)
+#define RAD_TO_DEG(RAD) (float)((RAD) * D180_OVER_PI)
 
 static uint8_t calibration_done = 0;
 static uint8_t i2c_initialized = 0; /* Flag indicating wheater i2 module is initialized */
 static uint8_t temperature_sensor_en = 0; /* Is temp sensor enabled */
 
 /* Used for calibration */
-static int16_t mag_x_max = 0,
-	mag_x_min = 0,
-	mag_y_max = 0,
-	mag_y_min = 0,
-	mag_z_max = 0,
-	mag_z_min = 0;
+static int16_t mag_x_max = 384,
+	mag_x_min = -342,
+	mag_y_max = 477,
+	mag_y_min = -471,
+	mag_z_max = 506,
+	mag_z_min = -476;
 
+
+static void get_pitch_roll(float * pitch, float * roll);
 static void i2c_init(void){
 
 	i2c_init_i2c();
@@ -68,8 +72,6 @@ RETURN_STATUS acc_init_acc(void){
 	if(i2c_initialized == 0){
 		i2c_init();
 	}
-	
-	DEBUG("Init Accelero");
 	
 	i2c_write_data(ACC_SLAVE, ACC_CTRL_REG1, &conf_cr1, 1);
 	i2c_read_data(ACC_SLAVE, ACC_CTRL_REG1, &check, 1);
@@ -103,6 +105,17 @@ RETURN_STATUS acc_get_acc_xyz(acc_xyz_t * acc_out){
 	return EXIT_OK;
 }
 
+RETURN_STATUS acc_get_acc_angle(acc_angle_t * acc_angle){
+	float pitch, roll;
+
+	get_pitch_roll(&pitch, &roll);
+
+	acc_angle->pitch = pitch;
+	acc_angle->roll = roll;
+	
+	return EXIT_OK;
+}
+
 /********** MAGNETOMETER **********/
 RETURN_STATUS acc_init_mag(uint8_t temp_sensor){
 	/* Temperature sensor disabled, 30Hz */
@@ -119,8 +132,6 @@ RETURN_STATUS acc_init_mag(uint8_t temp_sensor){
 		cra_reg_m |= 0b10000000;
 		temperature_sensor_en = 1;
 	}
-	
-	DEBUG("Initializing Magnetometer");
 	
 	i2c_write_data(MAG_SLAVE, MAG_CRA_REG_M, &cra_reg_m, 1);
 	i2c_read_data(MAG_SLAVE, MAG_CRA_REG_M, &check, 1);
@@ -157,9 +168,8 @@ void acc_mag_calibrate(void){
 
 	mag_xyz_t m_out;
 	if(!calibration_done){
-		for(int i = 0; i < CALIBRATION_DURATION; i++){
-			
-			DEBUG("Calibrating...");
+		int i = CALIBRATION_DURATION;
+		do{
 			acc_get_mag_xyz(&m_out);
 			
 			if(m_out.x < mag_x_min) mag_x_min = m_out.x;
@@ -171,13 +181,8 @@ void acc_mag_calibrate(void){
 			if(m_out.y < mag_y_min) mag_y_min = m_out.y;
 			if(m_out.y > mag_y_max) mag_y_max = m_out.y;
 			
-			DEBUG("Current:\n\tMAX X = [%d] MIN X = [%d]"
-			      "\n\tMAX Y = [%d] MIN Y = [%d]"
-			      "\n\tMAX Z = [%d] MIN Z = [%d]",
-			      mag_x_max, mag_x_min, mag_y_max, mag_y_min, mag_z_max, mag_z_min);
-			
 			Delay(CALIBRATION_DELAY);
-		}
+		}while(--i);
 		
 		calibration_done = 1;
 	}
@@ -186,24 +191,12 @@ void acc_mag_calibrate(void){
 float acc_get_heading(void){
 
 	mag_xyz_t m_out;
-	acc_xyz_t a_out;
+	float pitch, roll;
+
+	get_pitch_roll(&pitch, &roll);
 	
-	acc_get_acc_xyz(&a_out);
-	
-	/* Equation 40 Normalize the axis readings */
-	float norAX = (float)(a_out.x / sqrt(a_out.x * a_out.x +
-					     a_out.y * a_out.y +
-					     a_out.z * a_out.z));
-	float norAY = (float)(a_out.y / sqrt(a_out.x * a_out.x +
-					     a_out.y * a_out.y +
-					     a_out.z * a_out.z));
-	
-	/* Equation 10 Calculate pitch and roll */
-	float pitch = asin(-norAX);
 	float c_pitch = cos(pitch);
 	float s_pitch = sin(pitch);
-	
-	float roll = asin(norAY/c_pitch);
 	float s_roll = sin(roll);
 	float c_roll = cos(roll);
 	
@@ -229,4 +222,16 @@ float acc_get_heading(void){
 	}
 
 	return heading;
+}
+
+static void get_pitch_roll(float * pitch, float * roll){
+
+	float z_squared;
+	acc_xyz_t acc_out;
+	
+	acc_get_acc_xyz(&acc_out);
+        z_squared = acc_out.z * acc_out.z;
+	
+	*pitch = RAD_TO_DEG(atan2(acc_out.x, sqrt(acc_out.y * acc_out.y + z_squared)));
+	*roll = RAD_TO_DEG(atan2(acc_out.y, sqrt(acc_out.x * acc_out.x + z_squared)));
 }

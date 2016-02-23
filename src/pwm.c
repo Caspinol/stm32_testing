@@ -89,17 +89,17 @@ void pwm_init_pwm(void){
 }
 
 void pwm_set_compare1(uint16_t pwm_val){
-	TIM_SetCompare1(TIM4, (uint32_t) pwm_val);
+	TIM_SetCompare1(TIM4, pwm_val);
 }
 
 void pwm_set_compare2(uint16_t pwm_val){
-	TIM_SetCompare2(TIM4, (uint32_t) pwm_val);
+	TIM_SetCompare2(TIM4, pwm_val);
 }
 
 void pwm_set_compare3(uint16_t pwm_val){
-	TIM_SetCompare3(TIM4, (uint32_t) pwm_val);
+	TIM_SetCompare3(TIM4, pwm_val);
 }
 
 void pwm_set_compare4(uint16_t pwm_val){
-	TIM_SetCompare4(TIM4, (uint32_t) pwm_val);
+	TIM_SetCompare4(TIM4, pwm_val);
 }

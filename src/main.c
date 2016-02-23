@@ -10,7 +10,8 @@
 #include "accelero.h"
 #include "gyro.h"
 
-#define DT 0.02;
+#define DT 0.02
+#define BETA 0.20
 
 volatile uint_fast8_t pwm_val = 0,
 	gyro = 0;
@@ -22,6 +23,7 @@ static float angle_x = 0.0,
 	angle_z = 0.0;
 
 static gyro_xyz_t g_xyz;
+static acc_angle_t acc_angle;
 
 //void update_PWM(void);
 
@@ -32,7 +34,6 @@ int main(void){
 	*/
 	if (SysTick_Config(SystemCoreClock / 1000)){ 
 		/* Capture error */ 
-		DEBUG("SysTick initialization error");
 		while(1);
 	}
 
@@ -40,29 +41,33 @@ int main(void){
 	gpio_setup_gpio();
 	tim_init_tim3();
 	//pwm_init_pwm();
-	//acc_init_acc();
-	//acc_init_mag(0); /* init mag but not the temperature sensor */
+	acc_init_acc();
+	acc_init_mag(0); /* init mag but not the temperature sensor */
 	if(gyro_init_gyro()){
 		while(1);
 	}
 	
 	while (1){
-
-		/* Lets first start from calibrating the mmeter */
-		//acc_mag_calibrate();
 		
-	        //update_PWM();
 		if(gyro){
+			/* We gonna attempt a little complementary filter here */
 			gyro_get_xyz(&g_xyz);
+			acc_get_acc_angle(&acc_angle);
+
+			//DEBUG("ACCELERO_ANGLE(Pitch = [%g], Roll = [%g])",
+			//      acc_angle.pitch, acc_angle.roll);
+
+			angle_x = BETA * (angle_x + g_xyz.x * DT) + (1.0 - BETA) * acc_angle.pitch;
+			angle_y = BETA * (angle_y + g_xyz.y * DT) + (1.0 - BETA) * acc_angle.roll;
 			
-			angle_x += g_xyz.x * DT;
-			angle_y += g_xyz.y * DT;
-			angle_z += g_xyz.z * DT;
-			
- 			DEBUG("GYRO(X = [%g], Y = [%g], Z = [%g])",
-			      angle_x * 10, angle_y * 10, angle_z * 10);
+ 			DEBUG("ANGLE (Roll = [%g], Pitch = [%g])",
+			      angle_x, angle_y);
 			gyro = 0;
  		}
+
+		//heading = acc_get_heading();
+
+		//DEBUG("Heading = [%g]", heading);
 	}
 }
 

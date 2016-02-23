@@ -25,7 +25,7 @@ static float g_yoffset = 0;
 static float g_zoffset = 0;
 
 /* Static functions */
-static RETURN_STATUS gyro_calibrate(uint8_t samples);
+static RETURN_STATUS gyro_calibrate(uint8_t const samples);
 static RETURN_STATUS gyro_get_xyz_raw(gyro_xyz_raw_t * g_raw);
 
 RETURN_STATUS gyro_init_gyro(void){
@@ -45,7 +45,7 @@ RETURN_STATUS gyro_init_gyro(void){
 		goto ERROR;
 	}
 
-	setup = 0b10000000;
+	setup = 0b00000000;
 	if(spi_write_data(GYRO_CTRL_REG4, setup)){
 		goto ERROR;
 	}
@@ -66,28 +66,30 @@ RETURN_STATUS gyro_init_gyro(void){
 	return EXIT_FAIL;
 }
 
-static RETURN_STATUS gyro_calibrate(uint8_t samples){
+static RETURN_STATUS gyro_calibrate(uint8_t const samples){
+
 	gyro_xyz_raw_t g_raw;
 	float g_x = 0,
 		g_y = 0,
 		g_z = 0;
-
+	
 	if(!samples) goto ERROR;
-
-	DEBUG("Calibrating Gyro");
-	for(int i = 0; i < samples; i++){
+	
+	int i = samples;
+	do{
  		if(gyro_get_xyz_raw(&g_raw)) goto ERROR;
 		g_x += g_raw.x;
 		g_y += g_raw.y;
 		g_z += g_raw.z;
- 	}
+ 	}while(--i);
 	
  	g_xoffset = g_x / samples;
 	g_yoffset = g_y / samples;
 	g_zoffset = g_z / samples;
-
+	
 	DEBUG("Gyro offset: X = [%g], Y = [%g], Z = [%g]",
 	      g_xoffset, g_yoffset, g_zoffset);
+	
 	return EXIT_OK;
  ERROR:
 	return EXIT_FAIL;
@@ -118,10 +120,6 @@ static RETURN_STATUS gyro_get_xyz_raw(gyro_xyz_raw_t * g_raw){
 	return EXIT_FAIL;
 }
 
-/* Returns Gyro XYZ data after applying Low Pass Filter
-   The LPF is just:
-   Y(n) = (1-ß)*Y(n-1) + (ß*X(n))) = Y(n-1) - (ß*(Y(n-1)-X(n)));
-*/
 RETURN_STATUS gyro_get_xyz(gyro_xyz_t * g_xyz){
 	
 	gyro_xyz_raw_t g_raw;

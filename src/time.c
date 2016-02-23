@@ -4,7 +4,7 @@
 /* For SysTick */
 static __IO uint_fast32_t systick_heartbeat;
 
-void Delay(__IO uint_fast32_t time){
+void Delay(uint_fast32_t const time){
 	systick_heartbeat = time;
 
 	while(systick_heartbeat != 0);

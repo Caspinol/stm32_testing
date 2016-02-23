@@ -23,7 +23,7 @@ OCDARG		= -f board/stm32f4discovery.cfg
 
 # Defines for SPL and CMSIS
 DEFINE       	= -DSTM32F401xx -DUSE_STDPERIPH_DRIVER -DSH_DEBUG
-DEFINE		+= -DARM_MATH_CM4
+#DEFINE		+= -DARM_MATH_CM4
 DEFINE		+= -D__FPU_USED -D__FPU_PRESENT
 
 # Search paths
@@ -46,7 +46,7 @@ CFLAGS    	+= -mcpu=cortex-m4 -mthumb -march=armv7e-m -mtune=cortex-m4
 CFLAGS		+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 CFLAGS    	+= $(INC) $(DEFINE)
 
-LFLAGS    	+= -Wl,--gc-sections -Wl,-Map=$(PROGNAME).map -Tlinker/stm32f4_linker.ld
+LFLAGS    	+= -Wl,--gc-sections -Wl,-Map=$(PROGNAME).map -Tlinker/stm32f4.ld
 LFLAGS   	+= -lrdimon -Wall --specs=rdimon.specs
 LFLAGS		+= -lc -lgcc -lm
 

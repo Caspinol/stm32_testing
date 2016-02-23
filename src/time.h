@@ -14,7 +14,7 @@
 	}while(0)
 
 
-void Delay(__IO uint_fast32_t time);
+void Delay(uint_fast32_t const time);
 void update_systick(void);
 uint_fast32_t get_systick(void);
 void tim_init_tim3(void);

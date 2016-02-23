@@ -49,14 +49,14 @@ void i2c_init_i2c(void){
 }
 
 /*
-  Reads the data from the specified register address
+  Reads the data from the specified register address on a @slave
   Reads from @reg
   Into @buffer
   As much as @num bytes
  */
-RETURN_STATUS i2c_read_data(uint8_t slave, uint8_t reg, uint8_t *buffer, uint8_t num){
+RETURN_STATUS i2c_read_data(uint8_t slave, uint8_t const reg, uint8_t *buffer, uint8_t num){
 
-	if(!num) return 1;
+	if(!num) goto ERROR;
 	
 	if(generate_start()) goto ERROR;
 	
@@ -110,14 +110,14 @@ RETURN_STATUS i2c_read_data(uint8_t slave, uint8_t reg, uint8_t *buffer, uint8_t
 }
 
 /*
-  Writes specifued date into the register
+  Writes specified data into the register on a @slave
   Writes @data
   Into @reg
   As much as @num bytes
 */
-RETURN_STATUS i2c_write_data(uint8_t slave, uint8_t reg, uint8_t *data, uint8_t num){
+RETURN_STATUS i2c_write_data(uint8_t slave, uint8_t const reg, uint8_t *data, uint8_t num){
 
-	if(!num) return 1;
+	if(!num) goto ERROR;
 
 	if(generate_start()) goto ERROR;
 
